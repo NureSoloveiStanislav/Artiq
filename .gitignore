@@ -14,8 +14,10 @@ yarn-error.log*
 # React
 client/node_modules/
 client/build/
+client/package-lock.json
 
 # Server
 server/node_modules/
+server/package-lock.json
 
 .idea
