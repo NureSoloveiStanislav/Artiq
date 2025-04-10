@@ -1,2 +1,10 @@
 #LoginForm {
 }
+
+.login-form {
+  p {
+    &:hover {
+      cursor: pointer;
+    }
+  }
+}
