@@ -1,21 +1,13 @@
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
 
-const connection = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  database: "artiq_db",
-  password: "password"
+const pool = mysql.createPool({
+  host: 'localhost',
+  user: 'root',
+  password: 'password',
+  database: 'artiq_db',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
-connection.connect((err) => {
-  if (err) {
-    return console.error("Error DB: " + err.message);
-  }
-  else{
-    console.log("MySQL successfully connected");
-  }
-});
-
-const promiseConnection = connection.promise();
-
-module.exports = connection;
+module.exports = pool;

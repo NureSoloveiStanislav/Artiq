@@ -1,18 +1,36 @@
 const express = require('express');
 const cors = require('cors');
-const bcrypt = require("bcrypt");
-const connection = require('./MySQL/mysql.js');
+const session = require('express-session');
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 const PORT = 5000;
 
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Cookie'],
+  exposedHeaders: ['Set-Cookie']
+}));
+
 app.use(express.json());
 
-app.get('/api/hello', (req, res) => {
-  res.json({ message: 'Привет от сервера!' });
-});
+app.use(session({
+  secret: 'stanislav',
+  name: 'sessionId',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: false,
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000
+  }
+}));
+
+app.use('/api/v1', userRoutes);
 
 app.listen(PORT, () => {
-  console.log(`Сервер запущен на http://localhost:${PORT}`);
+  console.log(`Server running at http://localhost:${PORT}`);
 });
