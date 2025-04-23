@@ -1,10 +1,12 @@
 import React, { FC, useEffect, useState } from 'react';
-import "./LoginForm.scss";
+import './LoginForm.scss';
 import { Button, Modal } from 'react-bootstrap';
 import { TypeUser } from '../../types/TypeUser';
 import CustomInput from '../CustomInput/CustomInput';
 import { UserRole } from '../../enums/UserRole';
 import Form from 'react-bootstrap/Form';
+import api from '../../api/axios';
+import axios from 'axios';
 
 type TypeLoginForm = {
   setShowLoginForm: React.Dispatch<React.SetStateAction<boolean>>;
@@ -42,7 +44,9 @@ type TypeRegisterFormData = {
 
 const LoginForm: FC<TypeLoginForm> = ({ user, setShowLoginForm, setUser, showLoginForm }) => {
   const [showRegisterForm, setShowRegisterForm] = useState<boolean>(false);
-
+  const [loginError, setLoginError] = useState<string>('');
+  const [registerError, setRegisterError] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [loginFormData, setLoginFormData] = useState<TypeLoginFormData>({
     email: '',
     password: ''
@@ -78,17 +82,15 @@ const LoginForm: FC<TypeLoginForm> = ({ user, setShowLoginForm, setUser, showLog
     event.preventDefault();
 
     if (showRegisterForm && validateFields(errorRegisterForm)) {
-      console.log('Register user data:', registerFormData);
-      // Здесь можно отправить данные на сервер
+      await register();
     } else if (!showRegisterForm && validateFields(errorLoginForm)) {
-      console.log('Login user data:', loginFormData);
-      // Здесь можно отправить данные на сервер
+      await login();
     }
   };
 
-  const validateFields = (errorForm:  TypeErrorLoginForm | TypeErrorRegisterForm): boolean => {
+  const validateFields = (errorForm: TypeErrorLoginForm | TypeErrorRegisterForm): boolean => {
     return Object.values(errorForm).every(value => !value);
-  }
+  };
 
   const validatePassword: RegExp = /^[a-zA-Z0-9]+$/;
 
@@ -96,12 +98,12 @@ const LoginForm: FC<TypeLoginForm> = ({ user, setShowLoginForm, setUser, showLog
     if (loginFormData.email.length > 5) {
       setErrorLoginForm((prevState: TypeErrorLoginForm) => ({
         ...prevState,
-        email: false,
+        email: false
       }));
     } else {
       setErrorLoginForm((prevState: TypeErrorLoginForm) => ({
         ...prevState,
-        email: true,
+        email: true
       }));
     }
   }, [loginFormData.email]);
@@ -110,12 +112,12 @@ const LoginForm: FC<TypeLoginForm> = ({ user, setShowLoginForm, setUser, showLog
     if (validatePassword.test(loginFormData.password) && loginFormData.password.length > 4) {
       setErrorLoginForm((prevState: TypeErrorLoginForm) => ({
         ...prevState,
-        password: false,
+        password: false
       }));
     } else {
       setErrorLoginForm((prevState: TypeErrorLoginForm) => ({
         ...prevState,
-        password: true,
+        password: true
       }));
     }
   }, [loginFormData.password]);
@@ -124,12 +126,12 @@ const LoginForm: FC<TypeLoginForm> = ({ user, setShowLoginForm, setUser, showLog
     if (registerFormData.firstName.length > 2) {
       setErrorRegisterForm((prevState: TypeErrorRegisterForm) => ({
         ...prevState,
-        firstName: false,
+        firstName: false
       }));
     } else {
       setErrorRegisterForm((prevState: TypeErrorRegisterForm) => ({
         ...prevState,
-        firstName: true,
+        firstName: true
       }));
     }
   }, [registerFormData.firstName]);
@@ -138,12 +140,12 @@ const LoginForm: FC<TypeLoginForm> = ({ user, setShowLoginForm, setUser, showLog
     if (registerFormData.lastName.length > 2) {
       setErrorRegisterForm((prevState: TypeErrorRegisterForm) => ({
         ...prevState,
-        lastName: false,
+        lastName: false
       }));
     } else {
       setErrorRegisterForm((prevState: TypeErrorRegisterForm) => ({
         ...prevState,
-        lastName: true,
+        lastName: true
       }));
     }
   }, [registerFormData.lastName]);
@@ -152,12 +154,12 @@ const LoginForm: FC<TypeLoginForm> = ({ user, setShowLoginForm, setUser, showLog
     if (registerFormData.phone.length > 5) {
       setErrorRegisterForm((prevState: TypeErrorRegisterForm) => ({
         ...prevState,
-        phone: false,
+        phone: false
       }));
     } else {
       setErrorRegisterForm((prevState: TypeErrorRegisterForm) => ({
         ...prevState,
-        phone: true,
+        phone: true
       }));
     }
   }, [registerFormData.phone]);
@@ -166,12 +168,12 @@ const LoginForm: FC<TypeLoginForm> = ({ user, setShowLoginForm, setUser, showLog
     if (registerFormData.email.length > 5) {
       setErrorRegisterForm((prevState: TypeErrorRegisterForm) => ({
         ...prevState,
-        email: false,
+        email: false
       }));
     } else {
       setErrorRegisterForm((prevState: TypeErrorRegisterForm) => ({
         ...prevState,
-        email: true,
+        email: true
       }));
     }
   }, [registerFormData.email]);
@@ -180,15 +182,127 @@ const LoginForm: FC<TypeLoginForm> = ({ user, setShowLoginForm, setUser, showLog
     if (validatePassword.test(registerFormData.password) && registerFormData.password.length > 4) {
       setErrorRegisterForm((prevState: TypeErrorRegisterForm) => ({
         ...prevState,
-        password: false,
+        password: false
       }));
     } else {
       setErrorRegisterForm((prevState: TypeErrorRegisterForm) => ({
         ...prevState,
-        password: true,
+        password: true
       }));
     }
   }, [registerFormData.password]);
+
+  const clearForms = (): void => {
+    setRegisterFormData({
+      email: '',
+      password: '',
+      firstName: '',
+      lastName: '',
+      phone: '',
+      role: UserRole.Buyer
+    });
+    setLoginFormData({
+      email: '',
+      password: ''
+    });
+  };
+
+  useEffect(() => {
+    console.log(user);
+  }, [user]);
+
+  const register = async () => {
+    setIsLoading(true);
+    setRegisterError('');
+
+    try {
+      const response = await api.post('/register', {
+        email: registerFormData.email,
+        password: registerFormData.password,
+        phone: registerFormData.phone,
+        firstName: registerFormData.firstName,
+        lastName: registerFormData.lastName,
+        role: registerFormData.role
+      });
+
+      if (response.status === 200) {
+        const user = {
+          id: response.data.id,
+          email: registerFormData.email,
+          firstName: registerFormData.firstName,
+          phone: registerFormData.phone,
+          lastName: registerFormData.lastName,
+          role: registerFormData.role,
+          rating: null
+        };
+        setUser(user);
+        setShowLoginForm(false);
+        clearForms();
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 409) {
+          setRegisterError('Користувач з такою електронною поштою вже існує');
+        } else if (error.response?.status === 400) {
+          setRegisterError(error.response.data.message || 'Неправильні дані для реєстрації');
+        } else {
+          setRegisterError('Помилка при реєстрації. Спробуйте пізніше');
+        }
+      } else {
+        setRegisterError('Виникла неочікувана помилка');
+      }
+      console.error('Error submitting the registration form: ', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const login = async () => {
+    setIsLoading(true);
+    setLoginError('');
+
+    try {
+      const {email, password} = loginFormData;
+
+      const response = await api.post('/login', {
+        email: email,
+        password: password
+      });
+
+      if (response.status === 200 && response.data) {
+        const { id, first_name, last_name, phone, role, rating } = response.data;
+
+        const userData = {
+          id: id,
+          email: email,
+          firstName: first_name || response.data.firstName,
+          lastName: last_name || response.data.lastName,
+          phone: phone,
+          role: role,
+          rating: rating || null
+        };
+
+        setUser(userData);
+        setShowLoginForm(false);
+        clearForms();
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          setLoginError('Неправильний email або пароль');
+        } else if (error.response?.status === 404) {
+          setLoginError('Користувача не знайдено');
+        } else {
+          setLoginError('Помилка при вході. Спробуйте пізніше');
+        }
+      } else {
+        setLoginError('Виникла неочікувана помилка');
+      }
+      console.error('Error submitting the login form: ', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div id="LoginForm">
@@ -209,7 +323,7 @@ const LoginForm: FC<TypeLoginForm> = ({ user, setShowLoginForm, setUser, showLog
             showRegisterForm ? (
               <Modal.Body>
                 <CustomInput type={'email'} name={'email'} state={registerFormData.email}
-                             isValid={!errorRegisterForm.email}
+                             isValid={!errorRegisterForm.email} maxLength={70}
                              label={'Введіть електронну пошту'} setState={setRegisterFormData} />
                 <CustomInput type={'password'} name={'password'} state={registerFormData.password}
                              isValid={!errorRegisterForm.password} label={'Введіть пароль'}
@@ -232,13 +346,23 @@ const LoginForm: FC<TypeLoginForm> = ({ user, setShowLoginForm, setUser, showLog
                   <option value={UserRole.Buyer}>Покупець</option>
                   <option value={UserRole.Seller}>Продавець</option>
                 </Form.Select>
+                {registerError && (
+                  <div className="alert alert-danger" role="alert">
+                    {registerError}
+                  </div>
+                )}
               </Modal.Body>
             ) : (
               <Modal.Body>
                 <CustomInput type={'email'} name={'email'} state={loginFormData.email} isValid={!errorLoginForm.email}
-                             label={'Введіть електронну пошту'} setState={setLoginFormData} />
+                             label={'Введіть електронну пошту'} setState={setLoginFormData} maxLength={70} />
                 <CustomInput type={'password'} name={'password'} state={loginFormData.password}
                              isValid={!errorLoginForm.password} label={'Введіть пароль'} setState={setLoginFormData} />
+                {loginError && (
+                  <div className="alert alert-danger" role="alert">
+                    {loginError}
+                  </div>
+                )}
               </Modal.Body>
             )
           }
@@ -248,8 +372,12 @@ const LoginForm: FC<TypeLoginForm> = ({ user, setShowLoginForm, setUser, showLog
             <Button variant="secondary" onClick={handleClose}>
               Close
             </Button>
-            <Button variant="primary" type="submit">
-              Save Changes
+            <Button
+              variant="primary"
+              type="submit"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Завантаження...' : 'Зберегти'}
             </Button>
           </Modal.Footer>
         </form>

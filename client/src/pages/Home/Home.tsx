@@ -1,9 +1,8 @@
-import React, { FC, useState } from 'react';
+import React, { FC } from 'react';
 import Header from '../../UIComponents/Header/Header';
 import './Home.scss'
 import LoginForm from '../../UIComponents/LoginForm/LoginForm';
 import { TypeUser } from '../../types/TypeUser';
-import { Button, Modal } from 'react-bootstrap';
 
 type TypeHome = {
   setShowLoginForm: React.Dispatch<React.SetStateAction<boolean>>;
@@ -16,8 +15,17 @@ type TypeHome = {
 const Home: FC<TypeHome> = ({user, setShowLoginForm, setUser, showLoginForm, customClassName}) => {
   return (
     <div id="Home" className={customClassName}>
-      { (<LoginForm user={user} setShowLoginForm={setShowLoginForm} showLoginForm={showLoginForm} setUser={setUser} />)}
-      <Header setShowLoginForm={setShowLoginForm} />
+      <LoginForm 
+        user={user} 
+        setShowLoginForm={setShowLoginForm} 
+        showLoginForm={showLoginForm} 
+        setUser={setUser} 
+      />
+      <Header 
+        setShowLoginForm={setShowLoginForm}
+        user={user}
+        setUser={setUser}
+      />
       <h1>Home</h1>
     </div>
   );
