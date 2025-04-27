@@ -19,5 +19,6 @@ client/package-lock.json
 # Server
 server/node_modules/
 server/package-lock.json
+server/uploads
 
 .idea
