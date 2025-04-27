@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const session = require('express-session');
 const userRoutes = require('./routes/userRoutes');
+const itemRoutes = require('./routes/itemRoutes');
 
 const app = express();
 const PORT = 5000;
@@ -15,6 +16,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.use(session({
   secret: 'stanislav',
@@ -29,7 +31,26 @@ app.use(session({
   }
 }));
 
+// Статична папка для доступу до завантажених файлів
+app.use('/uploads', express.static('uploads'));
+
 app.use('/api/v1', userRoutes);
+app.use('/api/v1', itemRoutes);
+
+// Обработка ошибок multer
+app.use((error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        message: 'File is too large. Maximum size is 5MB'
+      });
+    }
+    return res.status(400).json({
+      message: error.message
+    });
+  }
+  next(error);
+});
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);

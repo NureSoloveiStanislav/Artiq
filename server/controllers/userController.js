@@ -31,7 +31,6 @@ const registerUser = async (req, res) => {
       rating: null
     };
 
-    // Сохраняем данные пользователя в сессии
     req.session.user = user;
 
     return res.status(200).json(user);
@@ -69,7 +68,6 @@ const login = async (req, res) => {
       rating: user.rating
     };
 
-    // Сохраняем данные пользователя в сессии
     req.session.user = userResponse;
 
     return res.status(200).json(userResponse);

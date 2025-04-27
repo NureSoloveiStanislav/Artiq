@@ -1,0 +1,207 @@
+const pool = require('../MySQL/mysql.js');
+
+/**
+ * Create new item in database
+ * @param {Object} itemData - Item data
+ * @param {string} itemData.title - Item title
+ * @param {string} itemData.description - Item description
+ * @param {number} itemData.startingPrice - Starting price
+ * @param {string} itemData.category - Item category
+ * @param {number} itemData.userId - User ID who created the item
+ * @param {string} itemData.imagePath - Path to item image
+ * @returns {Promise<number>} Inserted item ID
+ */
+const createItem = async ({ title, description, startingPrice, category, userId, imagePath }) => {
+  try {
+    const [result] = await pool.execute(
+      `INSERT INTO items (
+        title, 
+        description, 
+        starting_price,
+        status, 
+        category, 
+        user_id, 
+        image_url
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        title,
+        description,
+        startingPrice,
+        'active',      // status
+        category,
+        userId,
+        imagePath     // image_url
+      ]
+    );
+    
+    return result.insertId;
+  } catch (error) {
+    console.error('Database error during item creation:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get item by ID
+ * @param {number} itemId - Item ID
+ * @returns {Promise<Object|null>} Item object or null if not found
+ */
+const getItemById = async (itemId) => {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT 
+        i.*,
+        u.first_name, u.last_name, u.email
+      FROM items i
+      LEFT JOIN users u ON i.user_id = u.user_id
+      WHERE i.item_id = ?`,
+      [itemId]
+    );
+    return rows[0] || null;
+  } catch (error) {
+    console.error('Database error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get all active items
+ * @param {Object} filters - Optional filters
+ * @param {string} filters.category - Filter by category
+ * @param {number} filters.userId - Filter by user ID
+ * @param {number} filters.limit - Limit number of items
+ * @param {number} filters.offset - Offset for pagination
+ * @returns {Promise<Array>} Array of items
+ */
+const getItems = async ({ category, userId, limit = 10, offset = 0 } = {}) => {
+  try {
+    let query = `
+      SELECT 
+        i.*,
+        u.first_name, u.last_name
+      FROM items i
+      LEFT JOIN users u ON i.user_id = u.user_id
+      WHERE 1=1
+    `;
+    const params = [];
+
+    if (category) {
+      query += ' AND i.category = ?';
+      params.push(category);
+    }
+
+    if (userId) {
+      query += ' AND i.user_id = ?';
+      params.push(userId);
+    }
+
+    query += ' ORDER BY i.item_id DESC LIMIT ? OFFSET ?';
+    params.push(limit, offset);
+
+    const [rows] = await pool.execute(query, params);
+    return rows;
+  } catch (error) {
+    console.error('Database error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update item
+ * @param {number} itemId - Item ID
+ * @param {Object} updateData - Data to update
+ * @returns {Promise<Object>} Result of update operation
+ */
+const updateItem = async (itemId, updateData) => {
+  const allowedFields = [
+    'title', 'description', 'current_price', 
+    'status', 'category', 'end_time'
+  ];
+  const updates = [];
+  const values = [];
+
+  Object.entries(updateData).forEach(([key, value]) => {
+    const dbField = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+    if (allowedFields.includes(dbField)) {
+      updates.push(`${dbField} = ?`);
+      values.push(value);
+    }
+  });
+
+  if (updates.length === 0) return null;
+
+  values.push(itemId);
+  const query = `UPDATE items SET ${updates.join(', ')} WHERE item_id = ?`;
+
+  try {
+    const [result] = await pool.execute(query, values);
+    return result;
+  } catch (error) {
+    console.error('Database error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete item
+ * @param {number} itemId - Item ID
+ * @returns {Promise<Object>} Result of delete operation
+ */
+const deleteItem = async (itemId) => {
+  try {
+    const [result] = await pool.execute(
+      'DELETE FROM items WHERE item_id = ?',
+      [itemId]
+    );
+    return result;
+  } catch (error) {
+    console.error('Database error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update item status
+ * @param {number} itemId - Item ID
+ * @param {string} status - New status ('active' or 'sold')
+ * @returns {Promise<Object>} Result of update operation
+ */
+const updateItemStatus = async (itemId, status) => {
+  try {
+    const [result] = await pool.execute(
+      'UPDATE items SET status = ? WHERE item_id = ?',
+      [status, itemId]
+    );
+    return result;
+  } catch (error) {
+    console.error('Database error:', error);
+    throw error;
+  }
+};
+
+const getAllItems = async () => {
+  try {
+    const [items] = await pool.execute(`
+      SELECT 
+        i.*,
+        u.first_name as seller_name
+      FROM items i
+      LEFT JOIN users u ON i.user_id = u.user_id
+    `);
+    
+    return items;
+  } catch (error) {
+    console.error('Error fetching items:', error);
+    throw error;
+  }
+};
+
+module.exports = {
+  createItem,
+  getItemById,
+  getItems,
+  updateItem,
+  deleteItem,
+  updateItemStatus,
+  getAllItems
+};
