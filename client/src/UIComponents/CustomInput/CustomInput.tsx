@@ -15,10 +15,16 @@ type CustomInputProps = {
 
 const CustomInput: FC<CustomInputProps> = ({customClassName, maxLength, isValid, label, id, name, type, state, setState}) => {
   const onChangeCustomInput = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    if (type === "number" && event.target.value !== "" && !isNaN(Number(event.target.value))) {
+      setState((prevState: any) => ({
+        ...prevState,
+        [name]: Number(event.target.value) || 0,
+      }));
+    } else
     setState((prevState: any) => ({
       ...prevState,
       [name]: event.target.value,
-    }))
+    }));
   };
 
   return (
