@@ -1,0 +1,58 @@
+.item-card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.item-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.item-details {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.bid-button {
+  margin-top: 15px;
+}
+
+.auction-timer {
+  font-weight: bold;
+  color: #d9534f;
+}
+
+.items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  padding: 20px;
+}
+
+// client/src/components/BidModal/BidModal.scss
+.bid-info {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+  
+  p {
+    margin-bottom: 5px;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+.modal-title {
+  word-break: break-word;
+}

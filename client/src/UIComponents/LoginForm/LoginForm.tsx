@@ -207,10 +207,6 @@ const LoginForm: FC<TypeLoginForm> = ({ user, setShowLoginForm, setUser, showLog
     });
   };
 
-  useEffect(() => {
-    console.log(user);
-  }, [user]);
-
   const register = async () => {
     setIsLoading(true);
     setRegisterError('');

@@ -1,4 +1,4 @@
 export enum ItemStatus {
-  Active = 'active',
-  Sold = 'sold',
+  ACTIVE = 'active',
+  SOLD = 'sold',
 }

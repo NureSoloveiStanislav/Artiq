@@ -1,0 +1,100 @@
+.profile-page {
+  .profile-card {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+
+    .profile-avatar {
+      width: 128px;
+      height: 128px;
+      border: 3px solid #f8f9fa;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .user-rating {
+      .stars {
+        color: #ffc107;
+        margin-right: 8px;
+      }
+
+      .rating-value {
+        font-weight: 500;
+      }
+    }
+  }
+
+  .review-card {
+    border-left: 4px solid #6c757d;
+
+    .review-rating {
+      color: #ffc107;
+      margin-top: 4px;
+    }
+  }
+
+  .auction-card {
+    transition: transform 0.2s ease;
+
+    &:hover {
+      transform: translateY(-5px);
+    }
+
+    .auction-img-container {
+      height: 180px;
+      overflow: hidden;
+    }
+
+    .auction-img {
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .auction-description {
+      max-height: 80px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+    }
+
+    .price-badge {
+      font-size: 1.1rem;
+      padding: 0.4rem 0.8rem;
+    }
+  }
+
+  .nav-tabs {
+    border-bottom: 2px solid #dee2e6;
+
+    .nav-link {
+      font-weight: 500;
+
+      &.active {
+        border-bottom: 3px solid #0d6efd;
+        border-left: none;
+        border-right: none;
+        border-top: none;
+        color: #0d6efd;
+      }
+    }
+  }
+}
+// Add these styles to your Profile.scss file
+.review-stars-container {
+  display: inline-flex;
+  margin-right: 8px;
+}
+
+.review-star {
+  font-size: 1.2rem;
+  margin: 0 1px;
+}
+
+.review-star.filled {
+  color: #ffb700;
+}
+
+.review-star.empty {
+  color: #e0e0e0;
+}

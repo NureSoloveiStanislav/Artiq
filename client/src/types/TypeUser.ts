@@ -6,6 +6,5 @@ export type TypeUser = {
   firstName: string,
   lastName: string,
   phone: string,
-  role: UserRole,
-  rating: number | null,
+  role: UserRole
 } | null

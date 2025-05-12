@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Home from './pages/Home/Home';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { TypeUser } from './types/TypeUser';
 import api from './api/axios';
 import axios from 'axios';
+import Profile from './pages/Profile/Profile';
+import Admin from './pages/Admin/Admin';
 
 function App() {
   const [user, setUser] = useState<TypeUser>(null);
@@ -26,21 +28,37 @@ function App() {
     checkSession();
   }, []);
 
+  useEffect(() => {
+    console.log(user?.role);
+  }, [user]);
+
   return (
     <Router>
       <Routes>
-        <Route 
-          path={'/'} 
+        <Route
+          path={'/'}
           element={
-            <Home 
-              user={user} 
-              setUser={setUser} 
-              showLoginForm={showLoginForm} 
-              setShowLoginForm={setShowLoginForm} 
+            <Home
+              user={user}
+              setUser={setUser}
+              showLoginForm={showLoginForm}
+              setShowLoginForm={setShowLoginForm}
             />
-          } 
+          }
         />
-        <Route path={'/test'} element={<h2>test page</h2>} />
+        <Route path={'/users/:id'} element={<Profile user={user}
+                                                    setUser={setUser}
+                                                    showLoginForm={showLoginForm}
+                                                    setShowLoginForm={setShowLoginForm} />} />
+        <Route
+          path="/admin"
+          element={
+              <Admin user={user}
+                     showLoginForm={showLoginForm}
+                     setUser={setUser}
+                     setShowLoginForm={setShowLoginForm}/>
+          }
+        />
       </Routes>
     </Router>
   );

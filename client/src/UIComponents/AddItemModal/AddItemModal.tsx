@@ -9,6 +9,7 @@ type TypeAddItemModal = {
   showAddItemModal: boolean,
   userId: number | undefined,
   setShowAddItemModal: React.Dispatch<React.SetStateAction<boolean>>,
+  addItem: (newItem: any) => void,
 }
 
 type TypeAddItem = {
@@ -32,7 +33,13 @@ type AlertMessage = {
 };
 
 
-const AddItemModal: FC<TypeAddItemModal> = ({ userId, customClassName, showAddItemModal, setShowAddItemModal }) => {
+const AddItemModal: FC<TypeAddItemModal> = ({
+                                              userId,
+                                              customClassName,
+                                              showAddItemModal,
+                                              setShowAddItemModal,
+                                              addItem
+                                            }) => {
   const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
   const [addItemData, setAddItemData] = useState<TypeAddItem>({
     title: '',
@@ -129,6 +136,7 @@ const AddItemModal: FC<TypeAddItemModal> = ({ userId, customClassName, showAddIt
   const onSubmitForm = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
     setAlertMessage(null);
+    setIsSubmitting(true);
 
     try {
       if (!userId) {
@@ -136,16 +144,17 @@ const AddItemModal: FC<TypeAddItemModal> = ({ userId, customClassName, showAddIt
           type: 'danger',
           text: 'Error: User ID is not defined.'
         });
+        setIsSubmitting(false);
         return;
       }
 
-      // Валідація полів перед відправкою
       if (errorAddItem.title || errorAddItem.description ||
         errorAddItem.startingPrice || errorAddItem.category) {
         setAlertMessage({
           type: 'warning',
           text: 'Please fill in all required fields correctly.'
         });
+        setIsSubmitting(false);
         return;
       }
 
@@ -167,14 +176,10 @@ const AddItemModal: FC<TypeAddItemModal> = ({ userId, customClassName, showAddIt
       });
 
       if (response.status === 200 || response.status === 201) {
-        setAlertMessage({
-          type: 'success',
-          text: 'Item added successfully!'
-        });
-
-        setTimeout(() => {
-          handleClose();
-        }, 1500);
+        addItem(response.data.data);
+        handleClose();
+        // console.log('Add Item: ');
+        // console.log(response.data.data);
       }
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -202,6 +207,8 @@ const AddItemModal: FC<TypeAddItemModal> = ({ userId, customClassName, showAddIt
         });
       }
       console.error('Error adding item:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
