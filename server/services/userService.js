@@ -9,7 +9,7 @@ const bcrypt = require('bcrypt');
 const getUserByEmail = async (email) => {
   try {
     const [rows] = await pool.execute(
-      'SELECT user_id, email, password, first_name, last_name, phone, role, rating FROM users WHERE email = ?',
+      'SELECT user_id, email, password, first_name, last_name, phone, role FROM users WHERE email = ?',
       [email]
     );
     return rows[0];
@@ -55,7 +55,7 @@ const createUser = async ({ email, password, phone, firstName, lastName, role })
  * @returns {Promise<Object>} Result of update operation
  */
 const updateUser = async (userId, updateData) => {
-  const allowedFields = ['phone', 'first_name', 'last_name', 'role', 'rating'];
+  const allowedFields = ['phone', 'first_name', 'last_name', 'role'];
   const updates = [];
   const values = [];
 

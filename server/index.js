@@ -3,6 +3,11 @@ const cors = require('cors');
 const session = require('express-session');
 const userRoutes = require('./routes/userRoutes');
 const itemRoutes = require('./routes/itemRoutes');
+const bidRoutes = require('./routes/bidRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+
+const multer = require('multer');
 
 const app = express();
 const PORT = 5000;
@@ -36,16 +41,21 @@ app.use('/uploads', express.static('uploads'));
 
 app.use('/api/v1', userRoutes);
 app.use('/api/v1', itemRoutes);
+app.use('/api/v1', bidRoutes);
+app.use('/api/v1', reviewRoutes);
+app.use('/api/v1/admin', adminRoutes);
 
 // Обработка ошибок multer
 app.use((error, req, res, next) => {
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({
+        status: 'error',
         message: 'File is too large. Maximum size is 5MB'
       });
     }
     return res.status(400).json({
+      status: 'error',
       message: error.message
     });
   }

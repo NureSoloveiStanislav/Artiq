@@ -1,3 +1,4 @@
+const pool = require('../MySQL/mysql.js');
 const itemService = require('../services/itemService');
 const multer = require('multer');
 const path = require('path');
@@ -52,32 +53,57 @@ const addItem = async (req, res) => {
     });
 
     const item = await itemService.getItemById(itemId);
-    
+
+    const itemWithFullImageUrl = {
+      ...item,
+      image: item.image
+        ? `${req.protocol}://${req.get('host')}/${item.image}`
+        : null
+    };
+    console.log(itemWithFullImageUrl);
+
     res.status(201).json({
+      status: 'success',
       message: 'Item added successfully',
-      item
+      data: itemWithFullImageUrl
     });
   } catch (error) {
     console.error('Error adding item:', error);
-    res.status(500).json({ message: 'Error adding item', error: error.message });
+    res.status(500).json({
+      status: 'error',
+      message: 'Error adding item',
+      error: error.message
+    });
   }
 };
 
 const getItems = async (req, res) => {
   try {
     const items = await itemService.getAllItems();
-    
-    // Перетворимо URL зображень на повні шляхи
-    const itemsWithFullImageUrls = items.map(item => ({
-      ...item,
-      image_url: item.image_url 
+
+    // Transform database model to frontend model
+    const transformedItems = items.map(item => ({
+      id: item.item_id,
+      title: item.title,
+      description: item.description,
+      startingPrice: parseFloat(item.starting_price),
+      currentPrice: item.current_price ? parseFloat(item.current_price) : null,
+      status: item.status,
+      firstBidTime: item.first_bid_time,
+      category: item.category,
+      endTime: item.end_time,
+      image: item.image_url
         ? `${req.protocol}://${req.get('host')}/${item.image_url}`
-        : null
+        : null,
+      userId: item.user_id,
+      sellerName: item.seller_name,
+      lastBidderId: item.last_bidder_id,
+      lastBidderName: item.last_bidder_name
     }));
 
     res.status(200).json({
       status: 'success',
-      data: itemsWithFullImageUrls
+      data: transformedItems
     });
   } catch (error) {
     console.error('Error getting items:', error);
@@ -89,8 +115,117 @@ const getItems = async (req, res) => {
   }
 };
 
+const getItemById = async (req, res) => {
+  // console.log(`getItemById called for ID: ${req.params.id}. Request details: Method=${req.method}, URL=${req.originalUrl}, IP=${req.ip}`);
+  try {
+    const itemId = req.params.id;
+
+    // Validate itemId
+    if (!itemId || isNaN(parseInt(itemId))) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid item ID'
+      });
+    }
+
+    const item = await itemService.getItemById(itemId); // Предполагаем, что возвращает объект строки БД
+
+    if (!item) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Item not found'
+      });
+    }
+
+    // console.log(item);
+    // Более детальное логирование значения end_time
+    // console.log(`Retrieved item ${itemId}. Raw end_time from service:`, item.end_time);
+    if (item.end_time === null) {
+      // console.log(`Retrieved item ${itemId} has a NULL end_time in the database.`);
+    } else {
+      // console.log(`Retrieved item ${itemId} with endTime: ${item.end_time}`); // Исходное сообщение
+    }
+
+    // Transform to frontend model format, ensuring numeric values are numbers
+    const transformedItem = {
+      id: parseInt(item.id),
+      title: item.title,
+      description: item.description,
+      startingPrice: parseFloat(item.startingPrice) || 0,
+      currentPrice: item.currentPrice ? parseFloat(item.currentPrice) || 0 : null,
+      status: item.status,
+      firstBidTime: item.firstBidTime, // Будет null, если не установлено
+      category: item.category,
+      endTime: item.endTime, // Будет null, если не установлено
+      image: item.image
+        ? `${req.protocol}://${req.get('host')}/${item.image_url}`
+        : null,
+      userId: parseInt(item.userId),
+      sellerName: item.sellerName,
+      // Используем null вместо undefined для согласованности JSON
+      lastBidderId: item.lastBidderId ? parseInt(item.lastBidderId) : null,
+      lastBidderName: item.lastBidderName
+    };
+
+    res.status(200).json(transformedItem);
+  } catch (error) {
+    console.error('Error fetching item:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch item details'
+    });
+  }
+};
+
+// Extract a function to format item data with full image URL
+const formatItemWithFullImageUrl = (item, req) => {
+  const fullImageUrl = item.image_url
+    ? `${req.protocol}://${req.get('host')}/${item.image_url}`
+    : null;
+
+  return {
+    item_id: item.item_id,
+    title: item.title,
+    description: item.description,
+    final_price: item.final_price,
+    end_time: item.end_time,
+    category: item.category,
+    seller_name: item.seller_name,
+    image_url: fullImageUrl
+  };
+};
+
+const getWonItems = async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    if (!userId) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'User ID is required'
+      });
+    }
+
+    const items = await itemService.getWonItemsByUserId(userId);
+    const updatedItems = items.map(item => formatItemWithFullImageUrl(item, req));
+
+    res.json({
+      status: 'success',
+      data: updatedItems
+    });
+  } catch (error) {
+    console.error('Error getting won items:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch won items'
+    });
+  }
+};
+
 module.exports = {
   addItem,
   upload,
-  getItems
+  getItems,
+  getItemById,
+  getWonItems
 };
