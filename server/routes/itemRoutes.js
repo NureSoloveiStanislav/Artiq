@@ -1,4 +1,3 @@
-// routes/itemRoutes.js
 const express = require('express');
 const router = express.Router();
 const { addItem, getWonItems, getItems, getItemById, upload } = require('../controllers/itemController');

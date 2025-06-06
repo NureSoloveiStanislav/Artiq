@@ -6,6 +6,7 @@ const itemRoutes = require('./routes/itemRoutes');
 const bidRoutes = require('./routes/bidRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 
 const multer = require('multer');
 
@@ -44,6 +45,7 @@ app.use('/api/v1', itemRoutes);
 app.use('/api/v1', bidRoutes);
 app.use('/api/v1', reviewRoutes);
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1', paymentRoutes);
 
 // Обработка ошибок multer
 app.use((error, req, res, next) => {
