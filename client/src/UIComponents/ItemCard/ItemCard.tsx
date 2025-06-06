@@ -1,4 +1,3 @@
-// client/src/components/ItemCard/ItemCard.tsx
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Badge } from 'react-bootstrap';
 import { TypeItem } from '../../types/TypeItem';
@@ -6,6 +5,7 @@ import api from '../../api/axios';
 import './ItemCard.scss';
 import BidModal from '../BidModal/BidModal';
 import { ItemStatus } from '../../enums/ItemStatus';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface ItemCardProps {
   item: TypeItem;
@@ -13,12 +13,14 @@ interface ItemCardProps {
   onItemUpdated: (updatedItem: TypeItem) => void;
 }
 
-// Extended TypeItem to include last bidder information
 interface ExtendedTypeItem extends TypeItem {
   lastBidderId?: number;
 }
 
 const ItemCard: React.FC<ItemCardProps> = ({ item, currentUserId, onItemUpdated }) => {
+  const { language, translations } = useLanguage();
+  const t = translations.itemCard[language];
+
   const [showBidModal, setShowBidModal] = useState(false);
   const [timeLeft, setTimeLeft] = useState<string | null>(null);
   const [auctionEnded, setAuctionEnded] = useState(false);
@@ -27,8 +29,6 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, currentUserId, onItemUpdated 
 
   useEffect(() => {
     setExtendedItem(item as ExtendedTypeItem);
-    console.log('logs: ' + item);
-    console.log(item);
   }, [item]);
 
   useEffect(() => {
@@ -38,9 +38,9 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, currentUserId, onItemUpdated 
         const now = new Date();
         const end = new Date(item.endTime || '');
         const diff = end.getTime() - now.getTime();
-        
+
         if (diff <= 0) {
-          setTimeLeft('Auction ended');
+          setTimeLeft(t.auctionEnded);
           setAuctionEnded(true);
           clearInterval(interval);
           handleAuctionEnd();
@@ -48,19 +48,19 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, currentUserId, onItemUpdated 
           // Format the remaining time
           const seconds = Math.floor((diff / 1000) % 60);
           const minutes = Math.floor((diff / 1000 / 60) % 60);
-          setTimeLeft(`${minutes}m ${seconds}s`);
+          setTimeLeft(`${minutes}${t.minutes} ${seconds}${t.seconds}`);
         }
       }, 1000);
-      
+
       return () => clearInterval(interval);
     }
-  }, [item.endTime]);
+  }, [item.endTime, t]);
 
   // Poll for updates every 5 seconds
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const response = await api.get(`/items/${item.id}`); // исправлено с /api/items/${item.id}
+        const response = await api.get(`/items/${item.id}`);
         if (response.data) {
           onItemUpdated(response.data);
         }
@@ -68,7 +68,7 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, currentUserId, onItemUpdated 
         console.error('Error polling for item updates:', error);
       }
     }, 5000);
-    
+
     return () => clearInterval(interval);
   }, [item.id, onItemUpdated]);
 
@@ -83,20 +83,20 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, currentUserId, onItemUpdated 
         amount,
         userId: currentUserId
       });
-      
+
       if (response.data.status === 'success') {
         // Update the item with new current price and last bidder info
         const updatedItem = {
           ...response.data.data.item,
           lastBidderId: currentUserId // Add the current user as last bidder
         };
-        
+
         setExtendedItem(updatedItem);
         onItemUpdated(response.data.data.item);
       }
     } catch (error) {
       console.error('Error placing bid:', error);
-      alert('Failed to place bid. Please try again.');
+      alert(t.failedToPlaceBid);
     }
   };
 
@@ -106,7 +106,7 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, currentUserId, onItemUpdated 
         const response = await api.put(`/items/${item.id}/close`);
         if (response.data.status === 'success') {
           setWinner(response.data.data.winner);
-          
+
           // Update item status
           const updatedItem = {
             ...item,
@@ -138,63 +138,64 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, currentUserId, onItemUpdated 
   return (
     <Card className="item-card mb-4">
       {item.image && (
-        <Card.Img 
-          variant="top" 
-          src={item.image} 
-          alt={item.title} 
+        <Card.Img
+          variant="top"
+          src={item.image}
+          alt={item.title}
           className="item-image"
         />
       )}
       <Card.Body>
         <Card.Title>{item.title}</Card.Title>
         <Card.Text>{item.description}</Card.Text>
-        
+
         <div className="d-flex justify-content-between align-items-center">
           <div>
             <Badge bg="info">{item.category}</Badge>
-            <Badge bg={isSold ? "secondary" : "success"} className="ms-2">
-              {isSold ? "Sold" : "Active"}
+            <Badge bg={isSold ? 'secondary' : 'success'} className="ms-2">
+              {isSold ? t.sold : t.active}
             </Badge>
           </div>
-          
+
           <div className="price-info">
-            <div>Current price: ${currentPrice.toFixed(2)}</div>
-            {timeLeft && <div className="time-left">Time left: {timeLeft}</div>}
+            <div>{t.currentPrice} ${currentPrice.toFixed(2)}</div>
+            {timeLeft && <div className="time-left">{t.timeLeft} {timeLeft}</div>}
           </div>
         </div>
-        
+
         {winner && (
           <div className="winner-info mt-3">
             <Badge bg="warning" text="dark">
-              Winner: {winner.name} - ${winner.amount.toFixed(2)}
+              {t.winner} {winner.name} - ${winner.amount.toFixed(2)}
             </Badge>
           </div>
         )}
-        
+
         {!isOwner && !isSold && !auctionEnded && (
-          <Button 
-            variant="primary" 
+          <Button
+            variant="primary"
             className="mt-3 w-100"
             onClick={handleBidClick}
             disabled={!currentUserId}
           >
-            Place a Bid
+            {t.placeBid}
           </Button>
         )}
-        
+
         {!currentUserId && (
           <Card.Text className="text-muted mt-2 text-center">
-            Sign in to place bids
+            {t.signInToPlaceBids}
           </Card.Text>
         )}
       </Card.Body>
-      
-      <BidModal 
+
+      <BidModal
         show={showBidModal}
         onHide={() => setShowBidModal(false)}
         item={item}
         onBidPlaced={handleBidPlaced}
         isLastBidder={isCurrentUserLastBidder()}
+        userId={currentUserId}
       />
     </Card>
   );

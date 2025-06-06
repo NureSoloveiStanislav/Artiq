@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { TypeUser } from '../../types/TypeUser';
 import api from '../../api/axios';
 import './Header.scss';
+import { useLanguage } from '../../context/LanguageContext';
 
 type TypeHeader = {
   setShowLoginForm: React.Dispatch<React.SetStateAction<boolean>>;
@@ -14,6 +15,7 @@ type TypeHeader = {
 const Header: FC<TypeHeader> = ({ setShowLoginForm, user, setUser }) => {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
+  const { language, setLanguage, translations } = useLanguage();
 
   const handleLogout = async () => {
     try {
@@ -25,50 +27,52 @@ const Header: FC<TypeHeader> = ({ setShowLoginForm, user, setUser }) => {
     }
   };
 
+  const toggleLanguage = () => {
+    setLanguage(language === 'ua' ? 'en' : 'ua');
+  };
+
+  const t = translations.header[language];
+
   return (
-    <Navbar 
-      expand="lg" 
-      className="header-container" 
+    <Navbar
+      expand="lg"
+      className="header-container"
       expanded={expanded}
       onToggle={setExpanded}
       sticky="top"
     >
       <Container>
         <Navbar.Brand as={Link} to="/" className="d-flex align-items-center">
-          {/*<img */}
-          {/*  src={logo} */}
-          {/*  alt="Artiq Logo" */}
-          {/*  className="header-logo" */}
-          {/*  width="40" */}
-          {/*  height="40"*/}
-          {/*/>*/}
           <span className="brand-name ms-2">Artiq</span>
         </Navbar.Brand>
-        
+
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
-        
+
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
-            <Nav.Link as={Link} to="/" onClick={() => setExpanded(false)}>Головна</Nav.Link>
-            <Nav.Link as={Link} to="/services" onClick={() => setExpanded(false)}>Послуги</Nav.Link>
-            <Nav.Link as={Link} to="/portfolio" onClick={() => setExpanded(false)}>Портфоліо</Nav.Link>
-            <Nav.Link as={Link} to="/about" onClick={() => setExpanded(false)}>Про нас</Nav.Link>
-            <Nav.Link as={Link} to="/contacts" onClick={() => setExpanded(false)}>Контакти</Nav.Link>
+            <Nav.Link as={Link} to="/" onClick={() => setExpanded(false)}>{t.home}</Nav.Link>
           </Nav>
-          
           <Nav>
+            <Button
+              variant="outline-secondary"
+              className="me-2"
+              onClick={toggleLanguage}
+            >
+              {language === 'ua' ? 'EN' : 'UA'}
+            </Button>
+
             {user ? (
-              <NavDropdown 
-                title={`Вітаємо, ${user.firstName}!`} 
+              <NavDropdown
+                title={`${t.welcome}, ${user.firstName}!`}
                 id="user-dropdown"
                 align="end"
               >
-                <NavDropdown.Item as={Link} to="/profile" onClick={() => setExpanded(false)}>
-                  Профіль
+                <NavDropdown.Item as={Link} to={`/users/${user.id}`} onClick={() => setExpanded(false)}>
+                  {t.profile}
                 </NavDropdown.Item>
                 {user.role === 'admin' && (
                   <NavDropdown.Item as={Link} to="/admin" onClick={() => setExpanded(false)}>
-                    Адмін-панель
+                    {t.adminPanel}
                   </NavDropdown.Item>
                 )}
                 <NavDropdown.Divider />
@@ -76,19 +80,19 @@ const Header: FC<TypeHeader> = ({ setShowLoginForm, user, setUser }) => {
                   handleLogout();
                   setExpanded(false);
                 }}>
-                  Вийти
+                  {t.logout}
                 </NavDropdown.Item>
               </NavDropdown>
             ) : (
-              <Button 
-                variant="outline-primary" 
+              <Button
+                variant="outline-primary"
                 onClick={() => {
                   setShowLoginForm(true);
                   setExpanded(false);
                 }}
                 className="login-button"
               >
-                Увійти
+                {t.login}
               </Button>
             )}
           </Nav>
@@ -96,6 +100,6 @@ const Header: FC<TypeHeader> = ({ setShowLoginForm, user, setUser }) => {
       </Container>
     </Navbar>
   );
-};
+}
 
 export default Header;
