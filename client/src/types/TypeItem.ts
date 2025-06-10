@@ -1,8 +1,5 @@
-// In TypeItem.ts
-export enum ItemStatus {
-  ACTIVE = 'active',
-  SOLD = 'sold'
-}
+import { ItemStatus } from '../enums/ItemStatus';
+
 
 export type TypeItem = {
   id: number,

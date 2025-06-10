@@ -22,7 +22,7 @@ interface Item {
   category: string;
   starting_price: number;
   current_price: number;
-  status: 'active' | 'sold';
+  status: 'active' | 'sold' | 'created';
   user_id: number;
   image_url?: string;
   seller_name?: string; // Added to display seller name
@@ -64,32 +64,27 @@ type TypeAdmin = {
 }
 
 const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginForm}) => {
-  // Состояния для данных из разных таблиц
   const [users, setUsers] = useState<User[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [bids, setBids] = useState<Bid[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
 
-  // Состояния для модальных окон редактирования
   const [showUserModal, setShowUserModal] = useState<boolean>(false);
   const [showItemModal, setShowItemModal] = useState<boolean>(false);
   const [showBidModal, setShowBidModal] = useState<boolean>(false);
   const [showReviewModal, setShowReviewModal] = useState<boolean>(false);
 
-  // Состояния для текущих редактируемых записей
   const [currentUser, setCurrentUser] = useState<Partial<User>>({});
   const [currentItem, setCurrentItem] = useState<Partial<Item>>({});
   const [currentBid, setCurrentBid] = useState<Partial<Bid>>({});
   const [currentReview, setCurrentReview] = useState<Partial<Review>>({});
 
-  // Состояние для уведомлений
   const [alert, setAlert] = useState<AlertState>({
     show: false,
     message: '',
     variant: 'success'
   });
 
-  // Загрузка данных при монтировании компонента
   useEffect(() => {
     fetchUsers();
     fetchItems();
@@ -97,13 +92,12 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
     fetchReviews();
   }, []);
 
-  // Функции для получения данных
   const fetchUsers = async (): Promise<void> => {
     try {
       const response = await api.get<User[]>('/admin/users');
       setUsers(response.data);
-    } catch (error) {
-      showAlert('Ошибка при загрузке пользователей', 'danger');
+    } catch (error: any) {
+      showAlert(error.response.data.message, 'danger');
     }
   };
 
@@ -111,8 +105,8 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
     try {
       const response = await api.get<Item[]>('/admin/items');
       setItems(response.data);
-    } catch (error) {
-      showAlert('Ошибка при загрузке товаров', 'danger');
+    } catch (error: any) {
+      showAlert(error.response.data.message, 'danger');
     }
   };
 
@@ -120,8 +114,8 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
     try {
       const response = await api.get<Bid[]>('/admin/bids');
       setBids(response.data);
-    } catch (error) {
-      showAlert('Ошибка при загрузке ставок', 'danger');
+    } catch (error: any) {
+      showAlert(error.response.data.message, 'danger');
     }
   };
 
@@ -129,12 +123,11 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
     try {
       const response = await api.get<Review[]>('/admin/reviews');
       setReviews(response.data);
-    } catch (error) {
-      showAlert('Ошибка при загрузке отзывов', 'danger');
+    } catch (error: any) {
+      showAlert(error.response.data.message, 'danger');
     }
   };
 
-  // Функции для управления пользователями
   const handleSaveUser = async (): Promise<void> => {
     try {
       if (currentUser.id) {
@@ -145,132 +138,120 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
           phone: currentUser.phone,
           role: currentUser.role
         });
-        showAlert('Пользователь успешно обновлен', 'success');
-      } else {
-        // Для нового пользователя (если такая функциональность будет добавлена)
+        showAlert('Користувач успішно оновлений', 'success');
       }
       setShowUserModal(false);
       fetchUsers();
     } catch (error) {
-      showAlert('Ошибка при сохранении пользователя', 'danger');
+      showAlert('Помилка при збережені користувача', 'danger');
     }
   };
 
-  const handleDeleteUser = async (id: number): Promise<void> => {
-    if (window.confirm('Вы уверены, что хотите удалить этого пользователя?')) {
-      try {
-        await api.delete(`/admin/users/${id}`);
-        showAlert('Пользователь успешно удален', 'success');
-        fetchUsers();
-      } catch (error) {
-        showAlert('Ошибка при удалении пользователя', 'danger');
-      }
-    }
-  };
+  // const handleDeleteUser = async (id: number): Promise<void> => {
+  //   if (window.confirm('Вы уверены, что хотите удалить этого пользователя?')) {
+  //     try {
+  //       await api.delete(`/admin/users/${id}`);
+  //       fetchUsers();
+  //     } catch (error) {
+  //     }
+  //   }
+  // };
 
-  // Функции для управления товарами
   const handleSaveItem = async (): Promise<void> => {
     try {
       if (currentItem.item_id) {
         await api.put(`/admin/items/${currentItem.item_id}`, currentItem);
-        showAlert('Товар успешно обновлен', 'success');
+        showAlert('Товар успішно оновлений', 'success');
       }
       setShowItemModal(false);
       fetchItems();
     } catch (error) {
-      showAlert('Ошибка при сохранении товара', 'danger');
+      showAlert('Помилка при збережені товару', 'danger');
     }
   };
 
   const handleDeleteItem = async (id: number): Promise<void> => {
-    if (window.confirm('Вы уверены, что хотите удалить этот товар?')) {
+    if (window.confirm('Ви впевнені, що хочете видалити цей товар?')) {
       try {
         await api.delete(`/admin/items/${id}`);
-        showAlert('Товар успешно удален', 'success');
+        showAlert('Товар успішно оновлений', 'success');
         fetchItems();
       } catch (error) {
-        showAlert('Ошибка при удалении товара', 'danger');
+        showAlert('Помилка при видалені товару', 'danger');
       }
     }
   };
 
-  // Функции для управления ставками
   const handleSaveBid = async (): Promise<void> => {
     try {
       if (currentBid.bid_id) {
         await api.put(`/admin/bids/${currentBid.bid_id}`, currentBid);
-        showAlert('Ставка успешно обновлена', 'success');
+        showAlert('Ставка успішно оновлена', 'success');
       }
       setShowBidModal(false);
       fetchBids();
     } catch (error) {
-      showAlert('Ошибка при сохранении ставки', 'danger');
+      showAlert('Помилка при збереженні ставки', 'danger');
     }
   };
 
   const handleDeleteBid = async (id: number): Promise<void> => {
-    if (window.confirm('Вы уверены, что хотите удалить эту ставку?')) {
+    if (window.confirm('Ви впевнені, що хочете видалити цю ставку?')) {
       try {
         await api.delete(`/admin/bids/${id}`);
-        showAlert('Ставка успешно удалена', 'success');
+        showAlert('Ставка успішно видалена', 'success');
         fetchBids();
       } catch (error) {
-        showAlert('Ошибка при удалении ставки', 'danger');
+        showAlert('Помилка при видалені ставки', 'danger');
       }
     }
   };
 
-  // Функции для управления отзывами
   const handleSaveReview = async (): Promise<void> => {
     try {
       if (currentReview.review_id) {
         await api.put(`/admin/reviews/${currentReview.review_id}`, currentReview);
-        showAlert('Отзыв успешно обновлен', 'success');
+        showAlert('Відгук успішно оновлений', 'success');
       }
       setShowReviewModal(false);
       fetchReviews();
     } catch (error) {
-      showAlert('Ошибка при сохранении отзыва', 'danger');
+      showAlert('Помилка при збереженні відгуку', 'danger');
     }
   };
 
   const handleDeleteReview = async (id: number): Promise<void> => {
-    if (window.confirm('Вы уверены, что хотите удалить этот отзыв?')) {
+    if (window.confirm('Ви впевнені, що хочете видалити відгук?')) {
       try {
         await api.delete(`/admin/reviews/${id}`);
-        showAlert('Отзыв успешно удален', 'success');
+        showAlert('Відгук успішно видалений', 'success');
         fetchReviews();
       } catch (error) {
-        showAlert('Ошибка при удалении отзыва', 'danger');
+        showAlert('Помилка при видалені відгуку', 'danger');
       }
     }
   };
 
-  // Функции для управления пользователями
   const handleEditUser = (user: User): void => {
     setCurrentUser(user);
     setShowUserModal(true);
   };
 
-  // Функции для управления товарами
   const handleEditItem = (item: Item): void => {
     setCurrentItem(item);
     setShowItemModal(true);
   };
 
-  // Функции для управления ставками
   const handleEditBid = (bid: Bid): void => {
     setCurrentBid(bid);
     setShowBidModal(true);
   };
 
-  // Функции для управления отзывами
   const handleEditReview = (review: Review): void => {
     setCurrentReview(review);
     setShowReviewModal(true);
   };
 
-  // Вспомогательная функция для уведомлений
   const showAlert = (message: string, variant: AlertState['variant']): void => {
     setAlert({ show: true, message, variant });
     setTimeout(() => setAlert({ show: false, message: '', variant: 'success' }), 3000);
@@ -286,7 +267,7 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
       />
       <Header setShowLoginForm={setShowLoginForm} user={user} setUser={setUser} />
       <div className="container-fluid mt-4">
-        <h1 className="mb-4">Панель администратора</h1>
+        <h1 className="mb-4">Панель адміністратора</h1>
 
         {alert.show && (
           <Alert variant={alert.variant} onClose={() => setAlert({...alert, show: false})} dismissible>
@@ -295,19 +276,19 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
         )}
 
         <Tabs defaultActiveKey="users" className="mb-4">
-          {/* Вкладка пользователей */}
-          <Tab eventKey="users" title="Пользователи">
+          {/* Користувачі */}
+          <Tab eventKey="users" title="Користувачі">
             <div className="table-responsive">
               <Table striped bordered hover>
                 <thead>
                 <tr>
                   <th>ID</th>
-                  <th>Имя</th>
-                  <th>Фамилия</th>
+                  <th>Ім'я</th>
+                  <th>Прізвище</th>
                   <th>Email</th>
                   <th>Телефон</th>
                   <th>Роль</th>
-                  <th>Действия</th>
+                  <th>Дії</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -321,10 +302,7 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
                     <td>{user.role}</td>
                     <td>
                       <Button variant="primary" size="sm" className="me-2" onClick={() => handleEditUser(user)}>
-                        Редактировать
-                      </Button>
-                      <Button variant="danger" size="sm" onClick={() => handleDeleteUser(user.id)}>
-                        Удалить
+                        Редагувати
                       </Button>
                     </td>
                   </tr>
@@ -334,20 +312,20 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
             </div>
           </Tab>
 
-          {/* Вкладка товаров */}
-          <Tab eventKey="items" title="Товары">
+          {/* Вкладка товарів */}
+          <Tab eventKey="items" title="Товари">
             <div className="table-responsive">
               <Table striped bordered hover>
                 <thead>
                 <tr>
                   <th>ID</th>
-                  <th>Название</th>
-                  <th>Категория</th>
-                  <th>Нач. цена</th>
-                  <th>Текущая цена</th>
+                  <th>Назва</th>
+                  <th>Категорія</th>
+                  <th>Початкова ціна</th>
+                  <th>Поточна ціна</th>
                   <th>Статус</th>
-                  <th>Продавец</th>
-                  <th>Действия</th>
+                  <th>Продавець</th>
+                  <th>Дії</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -357,15 +335,15 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
                     <td>{item.title}</td>
                     <td>{item.category}</td>
                     <td>${item.starting_price.toFixed(2)}</td>
-                    <td>${item.current_price.toFixed(2)}</td>
+                    <td>{item.current_price ? `$${item.current_price.toFixed(2)}` : '-'}</td>
                     <td>{item.status}</td>
                     <td>{item.seller_name || item.user_id}</td>
                     <td>
                       <Button variant="primary" size="sm" className="me-2" onClick={() => handleEditItem(item)}>
-                        Редактировать
+                        Редагувати
                       </Button>
                       <Button variant="danger" size="sm" onClick={() => handleDeleteItem(item.item_id)}>
-                        Удалить
+                        Видалити
                       </Button>
                     </td>
                   </tr>
@@ -382,11 +360,11 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
                 <thead>
                 <tr>
                   <th>ID</th>
-                  <th>Сумма</th>
-                  <th>Время</th>
-                  <th>Пользователь</th>
+                  <th>Сума</th>
+                  <th>Час</th>
+                  <th>Користувач</th>
                   <th>Товар</th>
-                  <th>Действия</th>
+                  <th>Дії</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -399,10 +377,10 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
                     <td>{bid.item_title || bid.item_id}</td>
                     <td>
                       <Button variant="primary" size="sm" className="me-2" onClick={() => handleEditBid(bid)}>
-                        Редактировать
+                        Редагувати
                       </Button>
                       <Button variant="danger" size="sm" onClick={() => handleDeleteBid(bid.bid_id)}>
-                        Удалить
+                        Видалити
                       </Button>
                     </td>
                   </tr>
@@ -412,19 +390,19 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
             </div>
           </Tab>
 
-          {/* Вкладка отзывов */}
-          <Tab eventKey="reviews" title="Отзывы">
+          {/* Вкладка відгуків */}
+          <Tab eventKey="reviews" title="Відгуки">
             <div className="table-responsive">
               <Table striped bordered hover>
                 <thead>
                 <tr>
                   <th>ID</th>
-                  <th>От пользователя</th>
-                  <th>О пользователе</th>
-                  <th>Оценка</th>
-                  <th>Комментарий</th>
-                  <th>Дата создания</th>
-                  <th>Действия</th>
+                  <th>Від користувача</th>
+                  <th>Про користувача</th>
+                  <th>Оцінка</th>
+                  <th>Коментар</th>
+                  <th>Дата створення</th>
+                  <th>Дії</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -438,10 +416,10 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
                     <td>{new Date(review.created_at).toLocaleString()}</td>
                     <td>
                       <Button variant="primary" size="sm" className="me-2" onClick={() => handleEditReview(review)}>
-                        Редактировать
+                        Редагувати
                       </Button>
                       <Button variant="danger" size="sm" onClick={() => handleDeleteReview(review.review_id)}>
-                        Удалить
+                        Видалити
                       </Button>
                     </td>
                   </tr>
@@ -452,15 +430,15 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
           </Tab>
         </Tabs>
 
-        {/* Модальное окно для редактирования пользователя */}
+        {/* Модальне вікно для редагування користувача */}
         <Modal show={showUserModal} onHide={() => setShowUserModal(false)}>
           <Modal.Header closeButton>
-            <Modal.Title>Редактирование пользователя</Modal.Title>
+            <Modal.Title>Редагування користувача</Modal.Title>
           </Modal.Header>
           <Modal.Body>
             <Form>
               <Form.Group className="mb-3">
-                <Form.Label>Имя</Form.Label>
+                <Form.Label>Ім'я</Form.Label>
                 <Form.Control
                   type="text"
                   value={currentUser.firstName || ''}
@@ -469,7 +447,7 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>Фамилия</Form.Label>
+                <Form.Label>Прізвище</Form.Label>
                 <Form.Control
                   type="text"
                   value={currentUser.lastName || ''}
@@ -501,32 +479,32 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
                   value={currentUser.role || 'buyer'}
                   onChange={(e) => setCurrentUser({...currentUser, role: e.target.value as User['role']})}
                 >
-                  <option value="admin">Администратор</option>
-                  <option value="buyer">Покупатель</option>
-                  <option value="seller">Продавец</option>
+                  <option value="admin">Адмін</option>
+                  <option value="buyer">Покупець</option>
+                  <option value="seller">Продавець</option>
                 </Form.Select>
               </Form.Group>
             </Form>
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={() => setShowUserModal(false)}>
-              Отмена
+              Відміна
             </Button>
             <Button variant="primary" onClick={handleSaveUser}>
-              Сохранить
+              Зберегти
             </Button>
           </Modal.Footer>
         </Modal>
 
-        {/* Модальное окно для редактирования товара */}
+        {/* Модальне вікно для редагування товару */}
         <Modal show={showItemModal} onHide={() => setShowItemModal(false)}>
           <Modal.Header closeButton>
-            <Modal.Title>Редактирование товара</Modal.Title>
+            <Modal.Title>Редагування товару</Modal.Title>
           </Modal.Header>
           <Modal.Body>
             <Form>
               <Form.Group className="mb-3">
-                <Form.Label>Название</Form.Label>
+                <Form.Label>Назва</Form.Label>
                 <Form.Control
                   type="text"
                   value={currentItem.title || ''}
@@ -535,7 +513,7 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>Описание</Form.Label>
+                <Form.Label>Опис</Form.Label>
                 <Form.Control
                   as="textarea"
                   rows={3}
@@ -545,7 +523,7 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>Начальная цена</Form.Label>
+                <Form.Label>Початкова ціна</Form.Label>
                 <Form.Control
                   type="number"
                   value={currentItem.starting_price || 0}
@@ -554,7 +532,7 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>Текущая цена</Form.Label>
+                <Form.Label>Поточна ціна</Form.Label>
                 <Form.Control
                   type="number"
                   value={currentItem.current_price || 0}
@@ -563,7 +541,7 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>Категория</Form.Label>
+                <Form.Label>Категорія</Form.Label>
                 <Form.Control
                   type="text"
                   value={currentItem.category || ''}
@@ -574,17 +552,17 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
               <Form.Group className="mb-3">
                 <Form.Label>Статус</Form.Label>
                 <Form.Select
-                  disabled
                   value={currentItem.status || 'active'}
                   onChange={(e) => setCurrentItem({...currentItem, status: e.target.value as Item['status']})}
                 >
-                  <option value="active">Активный</option>
-                  <option value="sold">Продано</option>
+                  <option value="active">Активний</option>
+                  <option value="created">Створений</option>
+                  <option value="sold">Проданий</option>
                 </Form.Select>
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>URL изображения</Form.Label>
+                <Form.Label>URL зображення</Form.Label>
                 <Form.Control
                   disabled
                   type="text"
@@ -596,23 +574,23 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={() => setShowItemModal(false)}>
-              Отмена
+              Відміна
             </Button>
             <Button variant="primary" onClick={handleSaveItem}>
-              Сохранить
+              Зберегти
             </Button>
           </Modal.Footer>
         </Modal>
 
-        {/* Модальное окно для редактирования ставки */}
+        {/* Модальне вікно для редагування ставки */}
         <Modal show={showBidModal} onHide={() => setShowBidModal(false)}>
           <Modal.Header closeButton>
-            <Modal.Title>Редактирование ставки</Modal.Title>
+            <Modal.Title>Редагування ставки</Modal.Title>
           </Modal.Header>
           <Modal.Body>
             <Form>
               <Form.Group className="mb-3">
-                <Form.Label>Сумма</Form.Label>
+                <Form.Label>Сума</Form.Label>
                 <Form.Control
                   type="number"
                   value={currentBid.amount || 0}
@@ -621,7 +599,7 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>Время</Form.Label>
+                <Form.Label>Час</Form.Label>
                 <Form.Control
                   type="datetime-local"
                   disabled
@@ -631,7 +609,7 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>ID пользователя</Form.Label>
+                <Form.Label>ID користувача</Form.Label>
                 <Form.Control
                   disabled
                   type="number"
@@ -641,7 +619,7 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>ID товара</Form.Label>
+                <Form.Label>ID товару</Form.Label>
                 <Form.Control
                   disabled
                   type="number"
@@ -653,23 +631,23 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={() => setShowBidModal(false)}>
-              Отмена
+              Відміна
             </Button>
             <Button variant="primary" onClick={handleSaveBid}>
-              Сохранить
+              Зберегти
             </Button>
           </Modal.Footer>
         </Modal>
 
-        {/* Модальное окно для редактирования отзыва */}
+        {/* Модальне вікно для редагування відгуку */}
         <Modal show={showReviewModal} onHide={() => setShowReviewModal(false)}>
           <Modal.Header closeButton>
-            <Modal.Title>Редактирование отзыва</Modal.Title>
+            <Modal.Title>Редагування відгука</Modal.Title>
           </Modal.Header>
           <Modal.Body>
             <Form>
               <Form.Group className="mb-3">
-                <Form.Label>ID оставившего отзыв</Form.Label>
+                <Form.Label>ID залишевшого відгук</Form.Label>
                 <Form.Control
                   type="number"
                   value={currentReview.reviewer_id || ''}
@@ -678,7 +656,7 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>ID получателя отзыва</Form.Label>
+                <Form.Label>ID отримувача відгука</Form.Label>
                 <Form.Control
                   type="number"
                   value={currentReview.reviewee_id || ''}
@@ -687,7 +665,7 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>Оценка</Form.Label>
+                <Form.Label>Оцінка</Form.Label>
                 <Form.Control
                   type="number"
                   min="1"
@@ -698,7 +676,7 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>Комментарий</Form.Label>
+                <Form.Label>Коментар</Form.Label>
                 <Form.Control
                   as="textarea"
                   rows={3}
@@ -710,10 +688,10 @@ const Admin: React.FC<TypeAdmin> = ({setShowLoginForm, user, setUser, showLoginF
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={() => setShowReviewModal(false)}>
-              Отмена
+              Відміна
             </Button>
             <Button variant="primary" onClick={handleSaveReview}>
-              Сохранить
+              Зберегти
             </Button>
           </Modal.Footer>
         </Modal>

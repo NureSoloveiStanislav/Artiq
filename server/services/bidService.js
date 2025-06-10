@@ -1,4 +1,3 @@
-// server/services/bidService.js
 const pool = require('../MySQL/mysql.js');
 
 /**
@@ -9,16 +8,14 @@ const pool = require('../MySQL/mysql.js');
  * @param {number} bidData.itemId - Item ID the bid is for
  * @returns {Promise<Object>} Result of create operation
  */
-// Modify the createBid function - the issue is here
 const createBid = async ({ amount, userId, itemId }) => {
   const connection = await pool.getConnection();
 
   try {
     await connection.beginTransaction();
 
-    // Получаем информацию о товаре и блокируем строку для обновления
     const [items] = await connection.query(
-      'SELECT * FROM items WHERE item_id = ? FOR UPDATE', // Добавляем FOR UPDATE для предотвращения гонок
+      'SELECT * FROM items WHERE item_id = ? FOR UPDATE',
       [itemId]
     );
 
@@ -29,14 +26,10 @@ const createBid = async ({ amount, userId, itemId }) => {
     const item = items[0];
     const currentPrice = item.current_price ? parseFloat(item.current_price) : parseFloat(item.starting_price);
 
-    // Проверка: сумма ставки должна быть числом и больше текущей цены
     if (isNaN(amount) || amount <= currentPrice) {
-      // Возвращаем ошибку, которую контроллер должен обработать и вернуть клиенту (например, статус 400)
       throw new Error(`Bid amount (${amount}) must be greater than the current price (${currentPrice})`);
     }
 
-    // Проверка: активен ли аукцион (например, статус 'new' или 'active')
-    // Подставьте ваши реальные статусы
     if (item.status !== 'active') {
       throw new Error(`Auction for item ${itemId} is not active.`);
     }
@@ -55,10 +48,8 @@ const createBid = async ({ amount, userId, itemId }) => {
       [amount, userId, itemId]
     );
 
-    // Всегда продлеваем таймер на 60 секунд от ТЕКУЩЕГО момента для КАЖДОЙ ставки
     const endTime = new Date(now.getTime() + 60000); // 1 минута после текущей ставки
 
-    // Если это первая ставка, также устанавливаем first_bid_time и обновляем статус на 'active'
     if (!item.first_bid_time) {
       const newStatus = item.status === 'new' ? 'active' : item.status; // Меняем статус, если был 'new'
       await connection.execute(
@@ -66,19 +57,15 @@ const createBid = async ({ amount, userId, itemId }) => {
         [now, endTime, newStatus, itemId]
       );
     } else {
-      // Для последующих ставок просто обновляем end_time
       await connection.execute(
         'UPDATE items SET end_time = ? WHERE item_id = ?',
         [endTime, itemId]
       );
-
-      // Логируем продление таймера
-      console.log(`Auction timer extended for item ${itemId}. New end time: ${endTime}`);
+      // console.log(`Auction timer extended for item ${itemId}. New end time: ${endTime}`);
     }
 
     await connection.commit();
 
-    // Получаем обновленный товар и включаем информацию о пользователе
     const [updatedItems] = await connection.query(
       `SELECT i.*,
               u.first_name as seller_first_name, u.last_name as seller_last_name,
@@ -90,7 +77,6 @@ const createBid = async ({ amount, userId, itemId }) => {
       [itemId]
     );
 
-    // Форматируем ответ с информацией о последнем ставившем
     const updatedItem = updatedItems[0];
     return {
       bidId: result.insertId,
@@ -102,9 +88,8 @@ const createBid = async ({ amount, userId, itemId }) => {
         currentPrice: parseFloat(updatedItem.current_price),
         status: updatedItem.status,
         firstBidTime: updatedItem.first_bid_time,
-        endTime: updatedItem.end_time, // Здесь будет новое продленное время
+        endTime: updatedItem.end_time,
         category: updatedItem.category,
-        // Добавляем протокол и хост к URL изображения в ответе
         image: updatedItem.image_url,
         userId: updatedItem.user_id,
         sellerName: updatedItem.seller_first_name && updatedItem.seller_last_name ?
@@ -117,14 +102,10 @@ const createBid = async ({ amount, userId, itemId }) => {
 
   } catch (error) {
     await connection.rollback();
-    console.error('Database error during bid creation:', error); // Оставляем логирование ошибки
-    // Перебрасываем ошибку, чтобы контроллер мог отправить ответ 500 или 400
-    // Можно добавить более специфическую обработку ошибок валидации
+    console.error('Database error during bid creation:', error);
     if (error.message.startsWith('Bid amount') || error.message.startsWith('Auction for item')) {
-      // Перебрасываем ошибку валидации как есть (контроллер должен вернуть 400 Bad Request)
       throw error;
     }
-    // Для других ошибок бросаем общую ошибку сервера
     throw new Error('Failed to place bid due to a server error.');
   } finally {
     connection.release();
@@ -192,7 +173,7 @@ const closeAuction = async (itemId) => {
       };
     }
     
-    console.log(`Auction ${itemId} closed successfully. Status updated to 'sold'.`);
+    // console.log(`Auction ${itemId} closed successfully. Status updated to 'sold'.`);
     
     return { 
       winner,

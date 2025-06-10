@@ -26,7 +26,7 @@ const createItem = async ({ title, description, startingPrice, category, userId,
         title,
         description,
         startingPrice,
-        'active',      // status
+        'created',      // status
         category,
         userId,
         imagePath     // image_url
@@ -40,7 +40,6 @@ const createItem = async ({ title, description, startingPrice, category, userId,
   }
 };
 
-// In itemService.js
 const getItemById = async (itemId) => {
   try {
     const [items] = await pool.query(

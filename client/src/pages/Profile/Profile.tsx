@@ -6,6 +6,7 @@ import LoginForm from '../../UIComponents/LoginForm/LoginForm';
 import { TypeUser } from '../../types/TypeUser';
 import api from '../../api/axios';
 import './Profile.scss';
+import { useLanguage } from '../../context/LanguageContext';
 
 type TypeProfile = {
   setShowLoginForm: React.Dispatch<React.SetStateAction<boolean>>;
@@ -46,8 +47,11 @@ type WonAuction = {
   seller_name?: string;
 }
 
-const Profile: FC<TypeProfile> = ({setShowLoginForm, setUser, showLoginForm, user, customClassName}) => {
+const Profile: FC<TypeProfile> = ({ setShowLoginForm, setUser, showLoginForm, user, customClassName }) => {
   const { id } = useParams();
+  const { language, translations } = useLanguage();
+  const t = translations.profile[language];
+
   const [profileUser, setProfileUser] = useState<ProfileUser | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [wonAuctions, setWonAuctions] = useState<WonAuction[]>([]);
@@ -59,21 +63,21 @@ const Profile: FC<TypeProfile> = ({setShowLoginForm, setUser, showLoginForm, use
   useEffect(() => {
     const fetchProfileData = async () => {
       if (!id) return;
-      
+
       setLoading(true);
       setError(null);
-      
+
       try {
         const userResponse = await api.get(`/users/${id}`);
         setProfileUser(userResponse.data);
-        
+
         if (user && user.id === parseInt(id)) {
           setIsOwnProfile(true);
         }
-        
+
         const reviewsResponse = await api.get(`/users/${id}/reviews`);
         setReviews(reviewsResponse.data.data || []);
-        console.log(reviewsResponse.data.data);
+        // console.log(reviewsResponse.data.data);
 
         const ratingResponse = await api.get(`/users/${id}/rating`);
         setAverageRating(ratingResponse.data.data?.averageRating || 0);
@@ -82,14 +86,27 @@ const Profile: FC<TypeProfile> = ({setShowLoginForm, setUser, showLoginForm, use
         setWonAuctions(auctionsResponse.data.data || []);
       } catch (err) {
         console.error('Error fetching profile data:', err);
-        setError('Не удалось загрузить данные профиля');
+        setError(t.errorLoading);
       } finally {
         setLoading(false);
       }
     };
-    
+
     fetchProfileData();
-  }, [id, user]);
+  }, [id, user, t]);
+
+  const getRoleTranslation = (role: string) => {
+    switch (role) {
+      case 'seller':
+        return t.seller;
+      case 'buyer':
+        return t.buyer;
+      case 'admin':
+        return t.admin;
+      default:
+        return role;
+    }
+  };
 
   return (
     <div className={`profile-page ${customClassName || ''}`}>
@@ -104,46 +121,45 @@ const Profile: FC<TypeProfile> = ({setShowLoginForm, setUser, showLoginForm, use
         user={user}
         setUser={setUser}
       />
-      
+
       <Container className="py-4">
-        {loading && <Alert variant="info">Загрузка данных профиля...</Alert>}
+        {loading && <Alert variant="info">{t.loadingProfile}</Alert>}
         {error && <Alert variant="danger">{error}</Alert>}
-        
+
         {profileUser && (
           <>
             <Row className="mb-4">
               <Col md={4}>
                 <Card className="profile-card">
                   <Card.Body className="text-center">
-                    <Image 
-                      src={`https://ui-avatars.com/api/?name=${profileUser.firstName}+${profileUser.lastName}&background=random&size=128`} 
-                      roundedCircle 
+                    <Image
+                      src={`https://ui-avatars.com/api/?name=${profileUser.firstName}+${profileUser.lastName}&background=random&size=128`}
+                      roundedCircle
                       className="mb-3 profile-avatar"
                     />
                     <Card.Title>
                       {profileUser.firstName} {profileUser.lastName}
-                      {isOwnProfile && <Badge bg="info" className="ms-2">Вы</Badge>}
+                      {isOwnProfile && <Badge bg="info" className="ms-2">{t.you}</Badge>}
                     </Card.Title>
                     <div className="user-rating mb-2">
                       <span className="stars">
                         {[1, 2, 3, 4, 5].map((star) => (
-                          <i 
+                          <i
                             key={star}
-                            className={`bi ${profileUser.rating && star <= profileUser.rating 
-                              ? 'bi-star-fill' 
-                              : (profileUser.rating && star - 0.5 <= profileUser.rating 
-                                ? 'bi-star-half' 
+                            className={`bi ${profileUser.rating && star <= profileUser.rating
+                              ? 'bi-star-fill'
+                              : (profileUser.rating && star - 0.5 <= profileUser.rating
+                                ? 'bi-star-half'
                                 : 'bi-star')}`}
                           ></i>
                         ))}
                       </span>
                       <span className="rating-value">
-                        {profileUser.rating ? profileUser.rating.toFixed(1) : 'Нет оценок'}
+                        {profileUser.rating ? profileUser.rating.toFixed(1) : t.noRating}
                       </span>
                     </div>
                     <Badge bg={profileUser.role === 'seller' ? 'primary' : 'success'} className="mb-3">
-                      {profileUser.role === 'seller' ? 'Продавец' : 
-                       profileUser.role === 'buyer' ? 'Покупатель' : 'Администратор'}
+                      {getRoleTranslation(profileUser.role)}
                     </Badge>
                     <ListGroup variant="flush" className="text-start">
                       <ListGroup.Item>
@@ -153,39 +169,39 @@ const Profile: FC<TypeProfile> = ({setShowLoginForm, setUser, showLoginForm, use
                         <i className="bi bi-telephone me-2"></i> {profileUser.phone}
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        <i className="bi bi-star-fill me-2"></i> 
-                        Рейтинг: {averageRating ? Number(averageRating).toFixed(1) : '0.0'}
-                        <span className="text-muted ms-2">({reviews.length} отзывов)</span>
+                        <i className="bi bi-star-fill me-2"></i>
+                        {t.rating}: {averageRating ? Number(averageRating).toFixed(1) : '0.0'}
+                        <span className="text-muted ms-2">({reviews.length} {t.reviewsCount})</span>
                       </ListGroup.Item>
                     </ListGroup>
                   </Card.Body>
                 </Card>
               </Col>
-              
+
               <Col md={8}>
                 <Tabs defaultActiveKey="reviews" className="mb-3">
-                  <Tab eventKey="reviews" title="Отзывы">
+                  <Tab eventKey="reviews" title={t.reviews}>
                     {reviews.length === 0 ? (
-                      <Alert variant="light">У пользователя пока нет отзывов</Alert>
+                      <Alert variant="light">{t.noReviews}</Alert>
                     ) : (
                       reviews.map((review: any) => (
                         <Card key={review.id} className="mb-3 review-card">
                           <Card.Header className="d-flex justify-content-between align-items-center bg-light">
                             <div className="d-flex align-items-center">
-                              <Image 
-                                src={`https://ui-avatars.com/api/?name=${review.reviewerName || 'User'}&background=random&size=32`} 
-                                roundedCircle 
+                              <Image
+                                src={`https://ui-avatars.com/api/?name=${review.reviewerName || t.user}&background=random&size=32`}
+                                roundedCircle
                                 className="me-2"
                                 width={32}
                                 height={32}
                               />
                               <div>
-                                <strong>{review.reviewerName || 'Пользователь'}</strong>
+                                <strong>{review.reviewerName || t.user}</strong>
                                 <div className="d-flex align-items-center">
                                   <div className="review-stars-container">
                                     {[...Array(5)].map((_, i) => (
-                                      <span 
-                                        key={i} 
+                                      <span
+                                        key={i}
                                         className={`review-star ${i < review.rating ? 'filled' : 'empty'}`}
                                       >
                                         ★
@@ -199,7 +215,7 @@ const Profile: FC<TypeProfile> = ({setShowLoginForm, setUser, showLoginForm, use
                             {review.createdAt && (
                               <div className="text-muted text-end">
                                 <small>
-                                  {new Date(review.createdAt).toLocaleDateString('ru-RU', {
+                                  {new Date(review.createdAt).toLocaleDateString(language === 'ua' ? 'uk-UA' : 'en-US', {
                                     year: 'numeric',
                                     month: 'long',
                                     day: 'numeric'
@@ -207,7 +223,7 @@ const Profile: FC<TypeProfile> = ({setShowLoginForm, setUser, showLoginForm, use
                                 </small>
                                 <br />
                                 <small>
-                                  {new Date(review.createdAt).toLocaleTimeString('ru-RU', {
+                                  {new Date(review.createdAt).toLocaleTimeString(language === 'ua' ? 'uk-UA' : 'en-US', {
                                     hour: '2-digit',
                                     minute: '2-digit'
                                   })}
@@ -217,17 +233,17 @@ const Profile: FC<TypeProfile> = ({setShowLoginForm, setUser, showLoginForm, use
                           </Card.Header>
                           <Card.Body>
                             <Card.Text>
-                              {review.comment || <em className="text-muted">Нет комментария</em>}
+                              {review.comment || <em className="text-muted">{t.noComment}</em>}
                             </Card.Text>
                           </Card.Body>
                         </Card>
                       ))
                     )}
                   </Tab>
-                  
-                  <Tab eventKey="won-auctions" title="Выигранные аукционы">
+
+                  <Tab eventKey="won-auctions" title={t.wonAuctions}>
                     {wonAuctions.length === 0 ? (
-                      <Alert variant="light">У пользователя пока нет выигранных аукционов</Alert>
+                      <Alert variant="light">{t.noWonAuctions}</Alert>
                     ) : (
                       <Row xs={1} md={2} className="g-4">
                         {wonAuctions.map(auction => (
@@ -236,7 +252,7 @@ const Profile: FC<TypeProfile> = ({setShowLoginForm, setUser, showLoginForm, use
                               <div className="auction-img-container">
                                 <Card.Img
                                   variant="top"
-                                  src={auction.image_url || 'https://via.placeholder.com/150'}
+                                  src={auction.image_url}
                                   className="auction-img"
                                 />
                               </div>
@@ -251,12 +267,12 @@ const Profile: FC<TypeProfile> = ({setShowLoginForm, setUser, showLoginForm, use
                                     ${auction.final_price}
                                   </Badge>
                                   <small className="text-muted">
-                                    Завершен: {new Date(auction.end_time).toLocaleDateString()}
+                                    {t.finishedOn}: {new Date(auction.end_time).toLocaleDateString(language === 'ua' ? 'uk-UA' : 'en-US')}
                                   </small>
                                 </div>
                                 {auction.seller_name && (
                                   <small className="text-muted d-block mt-2">
-                                    Продавец: {auction.seller_name}
+                                    {t.seller}: {auction.seller_name}
                                   </small>
                                 )}
                               </Card.Body>

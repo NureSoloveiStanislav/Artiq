@@ -1,13 +1,13 @@
 import React, { FC, useEffect, useState } from 'react';
 import { Alert, Button, Form, Row, Col, InputGroup, Badge } from 'react-bootstrap';
 import api from '../../api/axios';
-import { TypeNewItem } from '../../types/TypeNewItem';
 import BidModal from '../BidModal/BidModal';
 import { TypeItem } from '../../types/TypeItem';
-import { ItemStatus } from '../../types/TypeItem';
+import { ItemStatus } from '../../enums/ItemStatus';
 import './ItemsList.scss';
 import AddReviewModal from '../AddReviewModal/AddReviewModal';
 import { Link } from 'react-router-dom';
+import { useLanguage } from '../../context/LanguageContext';
 
 type TypeItemsList = {
   items: TypeItem[],
@@ -23,12 +23,16 @@ type ExtendedTypeItem = TypeItem & {
 }
 
 const ItemsList: FC<TypeItemsList> = ({ openAddItemModal, items, userId, userName }) => {
+  const { language, translations } = useLanguage();
+  const t = translations.itemsList[language];
+
   const [bidItem, setBidItem] = useState<ExtendedTypeItem | null>(null);
   const [showBidModal, setShowBidModal] = useState(false);
   const [auctionItems, setAuctionItems] = useState<ExtendedTypeItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [showReviewModal, setShowReviewModal] = useState<boolean>(false);
   const [itemForReview, setItemForReview] = useState<ExtendedTypeItem | undefined>(undefined);
+  const [finalPrice, setFinalPrice] = useState<number | null>(null);
 
   // Filter states
   const [categories, setCategories] = useState<string[]>([]);
@@ -74,7 +78,7 @@ const ItemsList: FC<TypeItemsList> = ({ openAddItemModal, items, userId, userNam
         setShowBidModal(true);
       }
     }
-  }, [auctionItems, userId]);
+  }, [auctionItems, userId, showBidModal]);
 
   const handleOpenBidModal = (item: ExtendedTypeItem) => {
     setBidItem(item);
@@ -89,12 +93,17 @@ const ItemsList: FC<TypeItemsList> = ({ openAddItemModal, items, userId, userNam
     }
   };
 
+  const clearBidModal = (): void => {
+    setShowBidModal(false);
+    setBidItem(null);
+  };
+
   const handleBidPlaced = async (itemId: number, amount: number) => {
     try {
-      console.log('Placing bid:', { itemId, amount, userId });
+      // console.log('Placing bid:', { itemId, amount, userId });
 
       if (!userId) {
-        setError('You must be logged in to place a bid.');
+        setError(t.mustBeLoggedIn);
         return;
       }
 
@@ -104,7 +113,7 @@ const ItemsList: FC<TypeItemsList> = ({ openAddItemModal, items, userId, userNam
         userId: userId
       });
 
-      console.log('Bid response:', response.data);
+      // console.log('Bid response:', response.data);
 
       if (response.data.status === 'success') {
         // Get the updated item data from the response
@@ -128,17 +137,17 @@ const ItemsList: FC<TypeItemsList> = ({ openAddItemModal, items, userId, userNam
       }
     } catch (error) {
       console.error('Error placing bid:', error);
-      setError('Failed to place bid. Please try again.');
+      setError(t.failedToPlaceBid);
     }
   };
 
   const closeAuction = async (itemId: number) => {
     try {
-      console.log(`Closing auction for item ${itemId}...`);
+      // console.log(`Closing auction for item ${itemId}...`);
       const response = await api.put(`/items/${itemId}/close`);
 
       if (response.data.status === 'success') {
-        console.log(`Successfully closed auction for item ${itemId}`);
+        // console.log(`Successfully closed auction for item ${itemId}`);
 
         // Update the item in the local state
         setAuctionItems(prevItems =>
@@ -154,11 +163,12 @@ const ItemsList: FC<TypeItemsList> = ({ openAddItemModal, items, userId, userNam
 
         const closedItem = auctionItems.find(item => item.id === itemId);
 
-        // If the closed auction is the current bidding item, close the modal
-        if (bidItem?.id === itemId) {
-          setShowBidModal(false);
-          setBidItem(null);
+        if (closedItem?.currentPrice) {
+          setFinalPrice(closedItem.currentPrice);
         }
+
+        handleCloseBidModal();
+
         if (closedItem?.lastBidderId === userId) {
           setShowReviewModal(true);
           setItemForReview(closedItem);
@@ -215,10 +225,10 @@ const ItemsList: FC<TypeItemsList> = ({ openAddItemModal, items, userId, userNam
     const now = new Date();
     const timeLeft = Math.max(0, auctionEndTime.getTime() - now.getTime());
 
-    if (timeLeft <= 0) return 'Auction ended';
+    if (timeLeft <= 0) return t.auctionEnded;
 
     const seconds = Math.floor((timeLeft / 1000) % 60);
-    return `${seconds}s remaining`;
+    return `${seconds}${t.seconds}`;
   };
 
   // Reset all filters
@@ -228,10 +238,7 @@ const ItemsList: FC<TypeItemsList> = ({ openAddItemModal, items, userId, userNam
     setSearchQuery('');
   };
 
-
-// Update the part where you check if the user is the last bidder
-
-// In the ItemsList component, improve the check for determining if the user is the last bidder
+  // Update the part where you check if the user is the last bidder
   const isUserLastBidder = (item: ExtendedTypeItem): boolean => {
     // Only return true if both IDs are valid numbers and they match
     return (
@@ -252,16 +259,16 @@ const ItemsList: FC<TypeItemsList> = ({ openAddItemModal, items, userId, userNam
   return (
     <div>
       <div className="filter-section mb-4">
-        <h3>Filter Auctions</h3>
+        <h3>{t.filterAuctions}</h3>
         <Row>
           <Col md={3}>
             <Form.Group className="mb-3">
-              <Form.Label>Category</Form.Label>
+              <Form.Label>{t.category}</Form.Label>
               <Form.Select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
-                <option value="">All Categories</option>
+                <option value="">{t.allCategories}</option>
                 {categories.map((category) => (
                   <option key={category} value={category}>{category}</option>
                 ))}
@@ -270,11 +277,11 @@ const ItemsList: FC<TypeItemsList> = ({ openAddItemModal, items, userId, userNam
           </Col>
           <Col md={3}>
             <Form.Group className="mb-3">
-              <Form.Label>Status</Form.Label>
+              <Form.Label>{t.status}</Form.Label>
               <Form.Check
                 type="switch"
                 id="status-switch"
-                label="Show only active auctions"
+                label={t.showOnlyActive}
                 checked={showOnlyActive}
                 onChange={(e) => setShowOnlyActive(e.target.checked)}
               />
@@ -282,11 +289,11 @@ const ItemsList: FC<TypeItemsList> = ({ openAddItemModal, items, userId, userNam
           </Col>
           <Col md={4}>
             <Form.Group className="mb-3">
-              <Form.Label>Search</Form.Label>
+              <Form.Label>{t.search}</Form.Label>
               <InputGroup>
                 <Form.Control
                   type="text"
-                  placeholder="Search by title or description"
+                  placeholder={t.searchPlaceholder}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -307,7 +314,7 @@ const ItemsList: FC<TypeItemsList> = ({ openAddItemModal, items, userId, userNam
               onClick={handleResetFilters}
               className="mb-3"
             >
-              Reset Filters
+              {t.resetFilters}
             </Button>
           </Col>
         </Row>
@@ -339,19 +346,19 @@ const ItemsList: FC<TypeItemsList> = ({ openAddItemModal, items, userId, userNam
               <p>{item.description}</p>
               {item.currentPrice && !isNaN(item.currentPrice) && (
                 <div className="price-info">
-                  <span>Current Price: ${Number(item.currentPrice).toFixed(2)}</span>
+                  <span>{t.currentPrice} ${Number(item.currentPrice).toFixed(2)}</span>
                   {item.lastBidderName && (
-                    <Badge bg="info">Last bid by: {item.lastBidderName}</Badge>
+                    <Badge bg="info">{t.lastBidBy} {item.lastBidderName}</Badge>
                   )}
                 </div>
               )}
               <div className="item-details">
-                <span> Starting Price: ${item.startingPrice && !isNaN(item.startingPrice)
+                <span>{t.startingPrice} ${item.startingPrice && !isNaN(item.startingPrice)
                   ? Number(item.startingPrice).toFixed(2)
                   : '0.00'}</span>
 
-                <span>Category: {item.category}</span>
-                <span>Seller: {item.userId ? (
+                <span>{t.category} {item.category}</span>
+                <span>{t.seller} {item.userId ? (
                   <Link
                     to={`/users/${item.userId}`}
                     className="seller-link"
@@ -360,11 +367,11 @@ const ItemsList: FC<TypeItemsList> = ({ openAddItemModal, items, userId, userNam
                   item.sellerName
                 )}</span>
                 <span className={`status-badge ${item.status}`}>
-                  Status: {item.status}
+                  {t.status} {item.status}
                 </span>
                 {item.firstBidTime && item.endTime && (
                   <span className="auction-timer">
-                    {getTimeRemaining(item.firstBidTime, item.endTime)}
+                    {t.remainingTime} {getTimeRemaining(item.firstBidTime, item.endTime)}
                   </span>
                 )}
               </div>
@@ -375,19 +382,19 @@ const ItemsList: FC<TypeItemsList> = ({ openAddItemModal, items, userId, userNam
                   onClick={() => handleOpenBidModal(item)}
                   className="bid-button"
                 >
-                  Place Bid
+                  {t.placeBid}
                 </Button>
               )}
             </div>
           ))
         ) : (
-          <p>No items match your filters. <Button variant="link" onClick={handleResetFilters}>Reset filters</Button></p>
+          <p>{t.noItemsMatch} <Button variant="link" onClick={handleResetFilters}>{t.resetFilters}</Button></p>
         )}
       </div>
       {showBidModal && bidItem && (
         <BidModal
           show={showBidModal}
-          onHide={handleCloseBidModal}
+          onHide={clearBidModal}
           item={getBidItemWithLatestData(bidItem)}
           onBidPlaced={handleBidPlaced}
           isLastBidder={isUserLastBidder(getBidItemWithLatestData(bidItem))}
@@ -403,9 +410,9 @@ const ItemsList: FC<TypeItemsList> = ({ openAddItemModal, items, userId, userNam
           itemId={itemForReview?.id || 0}
           itemTitle={itemForReview?.title || ''}
           buyerId={userId || 0}
+          finalPrice={finalPrice}
         />
-      )
-      }
+      )}
     </div>
   );
 };

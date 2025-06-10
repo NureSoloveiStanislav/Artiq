@@ -7,6 +7,7 @@ import { UserRole } from '../../enums/UserRole';
 import Form from 'react-bootstrap/Form';
 import api from '../../api/axios';
 import axios from 'axios';
+import { useLanguage } from '../../context/LanguageContext';
 
 type TypeLoginForm = {
   setShowLoginForm: React.Dispatch<React.SetStateAction<boolean>>;
@@ -43,6 +44,9 @@ type TypeRegisterFormData = {
 }
 
 const LoginForm: FC<TypeLoginForm> = ({ user, setShowLoginForm, setUser, showLoginForm }) => {
+  const { language, translations } = useLanguage();
+  const t = translations.login[language];
+
   const [showRegisterForm, setShowRegisterForm] = useState<boolean>(false);
   const [loginError, setLoginError] = useState<string>('');
   const [registerError, setRegisterError] = useState<string>('');
@@ -258,7 +262,7 @@ const LoginForm: FC<TypeLoginForm> = ({ user, setShowLoginForm, setUser, showLog
     setLoginError('');
 
     try {
-      const {email, password} = loginFormData;
+      const { email, password } = loginFormData;
 
       const response = await api.post('/login', {
         email: email,
@@ -311,7 +315,7 @@ const LoginForm: FC<TypeLoginForm> = ({ user, setShowLoginForm, setUser, showLog
       >
         <Modal.Header>
           <Modal.Title id="contained-modal-title-vcenter">
-            {showRegisterForm ? 'Реєстрація' : 'Авторизація'}
+            {showRegisterForm ? t.register : t.auth}
           </Modal.Title>
         </Modal.Header>
         <form onSubmit={(event: React.FormEvent<HTMLFormElement>) => onSubmitForm(event)}>
@@ -320,16 +324,17 @@ const LoginForm: FC<TypeLoginForm> = ({ user, setShowLoginForm, setUser, showLog
               <Modal.Body>
                 <CustomInput type={'email'} name={'email'} state={registerFormData.email}
                              isValid={!errorRegisterForm.email} maxLength={70}
-                             label={'Введіть електронну пошту'} setState={setRegisterFormData} />
+                             label={t.email} setState={setRegisterFormData} />
                 <CustomInput type={'password'} name={'password'} state={registerFormData.password}
-                             isValid={!errorRegisterForm.password} label={'Введіть пароль'}
+                             isValid={!errorRegisterForm.password} label={t.password}
                              setState={setRegisterFormData} />
                 <CustomInput type={'text'} name={'firstName'} state={registerFormData.firstName}
-                             isValid={!errorRegisterForm.firstName} label={'Ім\'я'} setState={setRegisterFormData} />
+                             isValid={!errorRegisterForm.firstName} label={t.firstName}
+                             setState={setRegisterFormData} />
                 <CustomInput type={'text'} name={'lastName'} state={registerFormData.lastName}
-                             isValid={!errorRegisterForm.lastName} label={'Прізвище'} setState={setRegisterFormData} />
+                             isValid={!errorRegisterForm.lastName} label={t.lastName} setState={setRegisterFormData} />
                 <CustomInput type={'tel'} name={'phone'} state={registerFormData.phone}
-                             isValid={!errorRegisterForm.phone} label={'Мобільний номер'}
+                             isValid={!errorRegisterForm.phone} label={t.phone}
                              setState={setRegisterFormData} />
                 <Form.Select value={registerFormData.role}
                              onChange={(e) =>
@@ -338,9 +343,9 @@ const LoginForm: FC<TypeLoginForm> = ({ user, setShowLoginForm, setUser, showLog
                                  role: e.target.value as UserRole
                                })
                              }>
-                  <option disabled>Зареєструватися як:</option>
-                  <option value={UserRole.Buyer}>Покупець</option>
-                  <option value={UserRole.Seller}>Продавець</option>
+                  <option disabled>{t.registerAs}</option>
+                  <option value={UserRole.Buyer}>{t.buyer}</option>
+                  <option value={UserRole.Seller}>{t.seller}</option>
                 </Form.Select>
                 {registerError && (
                   <div className="alert alert-danger" role="alert">
@@ -351,9 +356,9 @@ const LoginForm: FC<TypeLoginForm> = ({ user, setShowLoginForm, setUser, showLog
             ) : (
               <Modal.Body>
                 <CustomInput type={'email'} name={'email'} state={loginFormData.email} isValid={!errorLoginForm.email}
-                             label={'Введіть електронну пошту'} setState={setLoginFormData} maxLength={70} />
+                             label={t.email} setState={setLoginFormData} maxLength={70} />
                 <CustomInput type={'password'} name={'password'} state={loginFormData.password}
-                             isValid={!errorLoginForm.password} label={'Введіть пароль'} setState={setLoginFormData} />
+                             isValid={!errorLoginForm.password} label={t.password} setState={setLoginFormData} />
                 {loginError && (
                   <div className="alert alert-danger" role="alert">
                     {loginError}
@@ -364,22 +369,24 @@ const LoginForm: FC<TypeLoginForm> = ({ user, setShowLoginForm, setUser, showLog
           }
           <Modal.Footer>
             <p
-              onClick={(): void => setShowRegisterForm(!showRegisterForm)}>{showRegisterForm ? 'У мене вже є акаунт' : 'У мене ще намає акаунту'}</p>
+              onClick={(): void => setShowRegisterForm(!showRegisterForm)}>
+              {showRegisterForm ? t.haveAccount : t.noAccount}
+            </p>
             <Button variant="secondary" onClick={handleClose}>
-              Close
+              {t.close}
             </Button>
             <Button
               variant="primary"
               type="submit"
               disabled={isLoading}
             >
-              {isLoading ? 'Завантаження...' : 'Зберегти'}
+              {isLoading ? t.loading : t.save}
             </Button>
           </Modal.Footer>
         </form>
       </Modal>
     </div>
   );
-};
+}
 
 export default LoginForm;

@@ -6,7 +6,7 @@ const pool = mysql.createPool({
   password: 'password',
   database: 'artiq_db',
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: 250,
   queueLimit: 0
 });
 

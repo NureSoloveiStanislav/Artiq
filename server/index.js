@@ -47,7 +47,7 @@ app.use('/api/v1', reviewRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1', paymentRoutes);
 
-// Обработка ошибок multer
+// Обробник помилок multer
 app.use((error, req, res, next) => {
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {

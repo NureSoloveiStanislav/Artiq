@@ -1,4 +1,3 @@
-// server/routes/bidRoutes.js
 const express = require('express');
 const router = express.Router();
 const { placeBid, closeAuction, getBidsByItem } = require('../controllers/bidController');

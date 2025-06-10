@@ -4,7 +4,7 @@ const placeBid = async (req, res) => {
   try {
     const { itemId, amount, userId } = req.body;
     
-    console.log('Received bid request:', { itemId, amount, userId });
+    // console.log('Received bid request:', { itemId, amount, userId });
     
     // Validate required fields
     if (!itemId) {

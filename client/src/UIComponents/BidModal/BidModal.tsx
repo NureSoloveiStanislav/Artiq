@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Badge, Button, Form, Modal } from 'react-bootstrap';
-import { TypeItem, ItemStatus } from '../../types/TypeItem';
+import { TypeItem } from '../../types/TypeItem';
+import { ItemStatus } from '../../enums/ItemStatus';
 import api from '../../api/axios';
+import { useLanguage } from '../../context/LanguageContext';
 
 type BidModalProps = {
   show: boolean;
@@ -20,6 +22,9 @@ const BidModal: React.FC<BidModalProps> = ({
                                              isLastBidder,
                                              userId
                                            }) => {
+  const { language, translations } = useLanguage();
+  const t = translations.bid[language];
+
   const [bidAmount, setBidAmount] = useState<number | ''>('');
   const [error, setError] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
@@ -50,13 +55,11 @@ const BidModal: React.FC<BidModalProps> = ({
       (timeLeft !== null && timeLeft <= 0);
 
     if (isAuctionEnded) {
-      console.log('Auction has ended');
-
+      // console.log('Auction has ended');
       onHide();
     }
   }, [currentItem.status, timeLeft, isCurrentBidder, onHide, auctionEndedMessageShown, item]);
 
-  // В эффекте для опроса обновлений, добавьте явное закрытие окна, когда элемент помечен как SOLD
   useEffect(() => {
     if (!show || !item || !item.id) return;
 
@@ -66,20 +69,13 @@ const BidModal: React.FC<BidModalProps> = ({
         if (response.data) {
           // console.log('Updated item data:', response.data);
 
-          // Check if status changed to SOLD
-          // if (response.data.status === ItemStatus.SOLD &&
-          //   currentItem.status !== ItemStatus.SOLD) {
-          //   console.log('Item was sold, closing modal now...');
-          //   onHide();
-          // }
-
           setCurrentItem(response.data);
 
           // Show outbid message if needed
           if (response.data.lastBidderId &&
             userId !== response.data.lastBidderId &&
             response.data.status !== ItemStatus.SOLD) {
-            setError(`You've been outbid! ${response.data.lastBidderName} is now the highest bidder.`);
+            setError(`${t.errorOutbid.split('!')[0]}! ${response.data.lastBidderName} тепер є найвищим учасником торгів!`);
           } else if (response.data.status !== ItemStatus.SOLD) {
             // Only clear error if auction is still active and not outbid
             setError(null);
@@ -89,8 +85,6 @@ const BidModal: React.FC<BidModalProps> = ({
         console.error('Error fetching item updates:', error);
       }
     };
-
-    // Остальная часть кода без изменений...
 
     // Initial fetch immediately when modal opens
     fetchItemUpdates();
@@ -108,7 +102,7 @@ const BidModal: React.FC<BidModalProps> = ({
         pollIntervalRef.current = null;
       }
     };
-  }, [show, item?.id, userId, currentItem.status, isCurrentBidder, onHide]);
+  }, [show, item?.id, userId, currentItem.status, isCurrentBidder, onHide, t]);
 
   // Time remaining calculation
   useEffect(() => {
@@ -136,7 +130,7 @@ const BidModal: React.FC<BidModalProps> = ({
 
       // If time has run out and the item is still active, trigger notification
       if (remaining <= 0 && currentItem.status === ItemStatus.ACTIVE) {
-        console.log('Timer reached zero, auction should end soon');
+        // console.log('Timer reached zero, auction should end soon');
       }
 
       return remaining > 0;
@@ -168,17 +162,17 @@ const BidModal: React.FC<BidModalProps> = ({
     e.preventDefault();
 
     if (!bidAmount) {
-      setError('Please enter a bid amount');
+      setError(t.errorEnterAmount);
       return;
     }
 
     if (bidAmount < getMinimumBidAmount(currentItem)) {
-      setError(`Bid amount must be at least $${getMinimumBidAmount(currentItem).toFixed(2)}`);
+      setError(`${t.errorMinimumBid}${getMinimumBidAmount(currentItem).toFixed(2)}`);
       return;
     }
 
     if (!currentItem || !currentItem.id) {
-      setError('Item data is missing or incomplete. Please try again.');
+      setError(t.errorMissingData);
       console.error('currentItem is missing id:', currentItem);
       return;
     }
@@ -199,15 +193,15 @@ const BidModal: React.FC<BidModalProps> = ({
       setError(null);
     } catch (error) {
       console.error('Error placing bid:', error);
-      setError('Failed to place bid. Please try again.');
+      setError(t.errorPlacingBid);
     }
   };
 
   const formatTimeLeft = () => {
     if (timeLeft === null) return '';
-    if (timeLeft <= 0) return 'Auction has ended';
+    if (timeLeft <= 0) return t.auctionEnded;
     const seconds = Math.floor((timeLeft / 1000) % 60);
-    return `${seconds} seconds remaining`;
+    return `${seconds} ${t.secondsRemaining}`;
   };
 
   // Calculate minimum bid amount
@@ -228,8 +222,8 @@ const BidModal: React.FC<BidModalProps> = ({
       <Modal.Header closeButton={!isCurrentBidder || auctionEndedMessageShown}>
         <Modal.Title>
           {isCurrentBidder
-            ? 'You are the highest bidder!'
-            : `Place Bid on ${currentItem.title}`}
+            ? t.highestBidder
+            : `${t.placeBidOn} ${currentItem.title}`}
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
@@ -237,7 +231,7 @@ const BidModal: React.FC<BidModalProps> = ({
 
         <div className="mb-3">
           <p>
-            <strong>Current Price:</strong> ${
+            <strong>{t.currentPrice}</strong> ${
             typeof currentItem.currentPrice === 'number'
               ? currentItem.currentPrice.toFixed(2)
               : typeof currentItem.startingPrice === 'number'
@@ -246,16 +240,16 @@ const BidModal: React.FC<BidModalProps> = ({
           }
           </p>
           <p>
-            <strong>Minimum Bid:</strong> ${
+            <strong>{t.minimumBid}</strong> ${
             getMinimumBidAmount(currentItem).toFixed(2)
           }
           </p>
 
           {currentItem.lastBidderName && (
             <p>
-              <strong>Last Bidder:</strong>{' '}
+              <strong>{t.lastBidder}</strong>{' '}
               {isCurrentBidder ? (
-                <Badge bg="success">You</Badge>
+                <Badge bg="success">{t.you}</Badge>
               ) : (
                 <Badge bg="info">{currentItem.lastBidderName}</Badge>
               )}
@@ -264,7 +258,7 @@ const BidModal: React.FC<BidModalProps> = ({
 
           {currentItem.endTime && (
             <div className="auction-timer-modal">
-              <strong>Time Remaining:</strong> {formatTimeLeft()}
+              <strong>{t.timeRemaining}</strong> {formatTimeLeft()}
               {timeLeft !== null && timeLeft > 0 && (
                 <div className="progress mt-2">
                   <div
@@ -282,41 +276,41 @@ const BidModal: React.FC<BidModalProps> = ({
           {timeLeft !== null && timeLeft <= 0 && currentItem.status === ItemStatus.SOLD && (
             <Alert variant={isCurrentBidder ? 'success' : 'info'} className="mt-2">
               {isCurrentBidder
-                ? 'Congratulations! You won this auction!'
-                : 'This auction has ended.'}
+                ? t.congratsWon
+                : t.auctionHasEnded}
             </Alert>
           )}
         </div>
 
         {isCurrentBidder && !auctionEndedMessageShown ? (
           <Alert variant="success">
-            You currently have the highest bid. The auction will close automatically when the timer expires.
+            {t.highestBidMessage}
           </Alert>
         ) : !auctionEndedMessageShown ? (
           <Form onSubmit={handleSubmit}>
             <Form.Group className="mb-3">
-              <Form.Label>Your Bid Amount ($)</Form.Label>
+              <Form.Label>{t.bidAmountLabel}</Form.Label>
               <Form.Control
                 type="number"
                 step="0.01"
                 min={getMinimumBidAmount(currentItem)}
                 value={bidAmount}
                 onChange={(e) => setBidAmount(e.target.value ? parseFloat(e.target.value) : '')}
-                placeholder={`Enter amount (min: $${getMinimumBidAmount(currentItem).toFixed(2)})`}
+                placeholder={`${t.enterAmount} $${getMinimumBidAmount(currentItem).toFixed(2)})`}
               />
               <Form.Text className="text-muted">
-                Must be at least 10% higher than the current price
+                {t.bidAmountHelp}
               </Form.Text>
             </Form.Group>
 
             <div className="d-flex justify-content-end">
               {!isCurrentBidder && (
                 <Button variant="secondary" onClick={onHide} className="me-2">
-                  Cancel
+                  {t.cancel}
                 </Button>
               )}
               <Button variant="primary" type="submit">
-                Place Bid
+                {t.placeBid}
               </Button>
             </div>
           </Form>

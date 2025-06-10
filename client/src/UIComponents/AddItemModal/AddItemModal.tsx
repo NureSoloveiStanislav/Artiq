@@ -3,6 +3,7 @@ import { Alert, Button, Modal } from 'react-bootstrap';
 import CustomInput from '../CustomInput/CustomInput';
 import axios from 'axios';
 import api from '../../api/axios';
+import { useLanguage } from '../../context/LanguageContext';
 
 type TypeAddItemModal = {
   customClassName?: string,
@@ -32,7 +33,6 @@ type AlertMessage = {
   text: string;
 };
 
-
 const AddItemModal: FC<TypeAddItemModal> = ({
                                               userId,
                                               customClassName,
@@ -40,6 +40,10 @@ const AddItemModal: FC<TypeAddItemModal> = ({
                                               setShowAddItemModal,
                                               addItem
                                             }) => {
+  const { language, translations } = useLanguage();
+  const t = translations.addItem[language] as Record<string, any>;
+  const errors = t.errors as Record<string, string>;
+
   const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
   const [addItemData, setAddItemData] = useState<TypeAddItem>({
     title: '',
@@ -142,7 +146,7 @@ const AddItemModal: FC<TypeAddItemModal> = ({
       if (!userId) {
         setAlertMessage({
           type: 'danger',
-          text: 'Error: User ID is not defined.'
+          text: errors.userIdNotDefined
         });
         setIsSubmitting(false);
         return;
@@ -152,7 +156,7 @@ const AddItemModal: FC<TypeAddItemModal> = ({
         errorAddItem.startingPrice || errorAddItem.category) {
         setAlertMessage({
           type: 'warning',
-          text: 'Please fill in all required fields correctly.'
+          text: errors.fillRequiredFields
         });
         setIsSubmitting(false);
         return;
@@ -178,8 +182,6 @@ const AddItemModal: FC<TypeAddItemModal> = ({
       if (response.status === 200 || response.status === 201) {
         addItem(response.data.data);
         handleClose();
-        // console.log('Add Item: ');
-        // console.log(response.data.data);
       }
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -192,18 +194,18 @@ const AddItemModal: FC<TypeAddItemModal> = ({
         if (error.response?.status === 413) {
           setAlertMessage({
             type: 'danger',
-            text: 'The image file is too large. Please choose a smaller file.'
+            text: errors.imageTooLarge
           });
         } else if (error.response?.status === 415) {
           setAlertMessage({
             type: 'danger',
-            text: 'Invalid file type. Please upload only images.'
+            text: errors.invalidFileType
           });
         }
       } else {
         setAlertMessage({
           type: 'danger',
-          text: 'An unexpected error occurred. Please try again.'
+          text: errors.unexpectedError
         });
       }
       console.error('Error adding item:', error);
@@ -223,7 +225,7 @@ const AddItemModal: FC<TypeAddItemModal> = ({
       >
         <Modal.Header>
           <Modal.Title id="contained-modal-title-vcenter">
-            Додати предмет
+            {t.title}
           </Modal.Title>
         </Modal.Header>
         <form onSubmit={(event: React.FormEvent<HTMLFormElement>) => onSubmitForm(event)}>
@@ -242,37 +244,58 @@ const AddItemModal: FC<TypeAddItemModal> = ({
               name={'title'}
               state={addItemData.title}
               isValid={!errorAddItem.title}
-              label={'Назва'}
+              label={t.itemName}
               setState={setAddItemData}
               maxLength={75}
             />
-            <CustomInput type={'text'} name={'description'} state={addItemData.description}
-                         isValid={!errorAddItem.description}
-                         label={'Опис'} setState={setAddItemData} maxLength={255} />
-            <CustomInput type={'number'} name={'startingPrice'} state={addItemData.startingPrice}
-                         isValid={!errorAddItem.startingPrice}
-                         label={''} setState={setAddItemData} />
-            <CustomInput type={'text'} name={'category'} state={addItemData.category} isValid={!errorAddItem.category}
-                         label={'Категорія'} setState={setAddItemData} maxLength={45} />
-            <input type="file" accept="image/*" name="image"
-                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                     const file = e.target.files?.[0];
-                     if (file) {
-                       setAddItemData({ ...addItemData, image: file });
-                     }
-                   }}
+            <CustomInput
+              type={'text'}
+              name={'description'}
+              state={addItemData.description}
+              isValid={!errorAddItem.description}
+              label={t.description}
+              setState={setAddItemData}
+              maxLength={255}
+            />
+            <CustomInput
+              type={'number'}
+              name={'startingPrice'}
+              state={addItemData.startingPrice}
+              isValid={!errorAddItem.startingPrice}
+              label={''}
+              setState={setAddItemData}
+            />
+            <CustomInput
+              type={'text'}
+              name={'category'}
+              state={addItemData.category}
+              isValid={!errorAddItem.category}
+              label={t.category}
+              setState={setAddItemData}
+              maxLength={45}
+            />
+            <input
+              type="file"
+              accept="image/*"
+              name="image"
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setAddItemData({ ...addItemData, image: file });
+                }
+              }}
             />
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={handleClose}>
-              Close
+              {t.close}
             </Button>
             <Button
               variant="primary"
               type="submit"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Збереження...' : 'Зберегти'}
+              {isSubmitting ? t.saving : t.save}
             </Button>
           </Modal.Footer>
         </form>

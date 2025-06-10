@@ -60,7 +60,6 @@ const addItem = async (req, res) => {
         ? `${req.protocol}://${req.get('host')}/${item.image}`
         : null
     };
-    console.log(itemWithFullImageUrl);
 
     res.status(201).json({
       status: 'success',
@@ -137,15 +136,6 @@ const getItemById = async (req, res) => {
       });
     }
 
-    // console.log(item);
-    // Более детальное логирование значения end_time
-    // console.log(`Retrieved item ${itemId}. Raw end_time from service:`, item.end_time);
-    if (item.end_time === null) {
-      // console.log(`Retrieved item ${itemId} has a NULL end_time in the database.`);
-    } else {
-      // console.log(`Retrieved item ${itemId} with endTime: ${item.end_time}`); // Исходное сообщение
-    }
-
     // Transform to frontend model format, ensuring numeric values are numbers
     const transformedItem = {
       id: parseInt(item.id),
@@ -154,15 +144,14 @@ const getItemById = async (req, res) => {
       startingPrice: parseFloat(item.startingPrice) || 0,
       currentPrice: item.currentPrice ? parseFloat(item.currentPrice) || 0 : null,
       status: item.status,
-      firstBidTime: item.firstBidTime, // Будет null, если не установлено
+      firstBidTime: item.firstBidTime,
       category: item.category,
-      endTime: item.endTime, // Будет null, если не установлено
+      endTime: item.endTime,
       image: item.image
         ? `${req.protocol}://${req.get('host')}/${item.image_url}`
         : null,
       userId: parseInt(item.userId),
       sellerName: item.sellerName,
-      // Используем null вместо undefined для согласованности JSON
       lastBidderId: item.lastBidderId ? parseInt(item.lastBidderId) : null,
       lastBidderName: item.lastBidderName
     };
